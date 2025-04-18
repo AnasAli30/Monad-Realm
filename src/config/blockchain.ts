@@ -14,7 +14,7 @@ export const MONAD_TESTNET = {
 };
 
 // Contract address - replace with your deployed contract address
-export const CONTRACT_ADDRESS = '0x2336b95de47c2D352bE50869A624cffF36f964ab';
+export const CONTRACT_ADDRESS = '0x3773bFF6749C0B01e41A174Efc820b8c4B1615eB';
 
 // Contract ABI - this will be generated when you compile the contract
 export const CONTRACT_ABI = [

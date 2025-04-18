@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { endGameOnBlockchain } from './services/blockchainService';
+import { endGameOnBlockchain, depositToPlayer } from './services/blockchainService';
 import { TransactionStatus } from './types';
 
 const app = express();
@@ -43,8 +43,20 @@ interface Room {
   betAmount: number;
 }
 
+interface SinglePlayerGameState {
+  snake: Position[];
+  food: Position;
+  direction: string;
+  score: number;
+  gameStatus: 'waiting' | 'inProgress' | 'finished';
+  startTime: number | null;
+  endTime: number | null;
+  monCoinsEarned: number;
+  ethereumAddress?: string;
+}
+
 const GRID_SIZE = 30;
-const GAME_DURATION = 30000; // 1 minute in milliseconds
+const GAME_DURATION = 180000; // 3 minutes in milliseconds
 const MIN_PLAYERS = 2;
 
 function generateFood(gridSize: number): Position {
@@ -59,6 +71,7 @@ function generateRoomId(): string {
 }
 
 const rooms = new Map<string, Room>();
+const singlePlayerGames = new Map<string, SinglePlayerGameState>();
 
 function createRoom(betAmount: number): Room {
   const roomId = generateRoomId();
@@ -174,6 +187,81 @@ async function endGame(room: Room) {
   setTimeout(() => {
     rooms.delete(room.id);
   }, 10000);
+}
+
+// Function to generate random MON coin reward
+function generateMonCoinReward(): number {
+  return Number((Math.random() * 0.09 + 0.01).toFixed(4)); // Random number between 0.01 and 0.1
+}
+
+// Function to update player balance in smart contract for single player mode
+async function rewardSinglePlayer(ethereumAddress: string, amount: number, socket: any): Promise<void> {
+  try {
+    // Call the smart contract to reward the player with isReward=true
+    const txHash = await depositToPlayer(
+      ethereumAddress,
+      amount,
+      true, // This is a reward from the game server
+      (status: TransactionStatus) => {
+        console.log(`Single player reward transaction status: ${status}`);
+      }
+    );
+
+    console.log('Transaction hash:', txHash);
+
+    // Emit the reward details to the client
+    socket.emit('monCoinReward', {
+      amount,
+      txHash
+    });
+  } catch (error: unknown) {
+    console.error('Error rewarding single player on blockchain:', error);
+    throw error;
+  }
+}
+
+// Update the single player game state when food is collected
+function updateSinglePlayerGameState(gameState: SinglePlayerGameState, socket: any): void {
+  if (gameState.gameStatus !== 'inProgress') return;
+
+  const head = gameState.snake[0];
+  if (checkCollision(head, gameState.food)) {
+    // Generate MON coin reward
+    const monCoinsEarned = Number((Math.random() * 0.09 + 0.01).toFixed(4));
+    gameState.monCoinsEarned += monCoinsEarned;
+    
+    // Generate new food position
+    gameState.food = generateFood(GRID_SIZE);
+    
+    // If player has an Ethereum address, reward them
+    if (gameState.ethereumAddress) {
+      rewardSinglePlayer(gameState.ethereumAddress, monCoinsEarned, socket)
+        .catch((error: unknown) => {
+          console.error('Failed to reward player:', error);
+        });
+    }
+  }
+  
+  // Update snake position based on direction
+  const newHead = { ...head };
+  switch (gameState.direction) {
+    case 'UP':
+      newHead.y = (newHead.y - 1 + GRID_SIZE) % GRID_SIZE;
+      break;
+    case 'DOWN':
+      newHead.y = (newHead.y + 1) % GRID_SIZE;
+      break;
+    case 'LEFT':
+      newHead.x = (newHead.x - 1 + GRID_SIZE) % GRID_SIZE;
+      break;
+    case 'RIGHT':
+      newHead.x = (newHead.x + 1) % GRID_SIZE;
+      break;
+  }
+  
+  // Update snake position
+  gameState.snake.unshift(newHead);
+  gameState.snake.pop();
 }
 
 io.on('connection', (socket) => {
@@ -399,6 +487,109 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('startSinglePlayer', ({ ethereumAddress }) => {
+    const gameState: SinglePlayerGameState = {
+      snake: [{
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE)
+      }],
+      food: generateFood(GRID_SIZE),
+      direction: 'right',
+      score: 0,
+      gameStatus: 'inProgress',
+      startTime: Date.now(),
+      endTime: Date.now() + GAME_DURATION,
+      monCoinsEarned: 0,
+      ethereumAddress
+    };
+    
+    singlePlayerGames.set(socket.id, gameState);
+    socket.emit('singlePlayerState', gameState);
+  });
+
+  socket.on('singlePlayerMove', ({ direction }) => {
+    const gameState = singlePlayerGames.get(socket.id);
+    if (!gameState || gameState.gameStatus !== 'inProgress') return;
+
+    // Update snake position based on direction
+    const head = { ...gameState.snake[0] };
+    
+    // Convert direction to uppercase to match the switch statement
+    const upperDirection = direction.toUpperCase();
+    
+    switch (upperDirection) {
+      case 'UP':
+        head.y -= 1;
+        break;
+      case 'DOWN':
+        head.y += 1;
+        break;
+      case 'LEFT':
+        head.x -= 1;
+        break;
+      case 'RIGHT':
+        head.x += 1;
+        break;
+    }
+
+    // Check for wall collision
+    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+      console.log('Wall collision detected! Game over!');
+      gameState.gameStatus = 'finished';
+      gameState.endTime = Date.now();
+      socket.emit('singlePlayerState', gameState);
+      return;
+    }
+
+    // Check for self collision
+    for (let i = 0; i < gameState.snake.length; i++) {
+      if (head.x === gameState.snake[i].x && head.y === gameState.snake[i].y) {
+        console.log('Self collision detected! Game over!');
+        gameState.gameStatus = 'finished';
+        gameState.endTime = Date.now();
+        socket.emit('singlePlayerState', gameState);
+        return;
+      }
+    }
+
+    // Check for food collection
+    if (checkCollision(head, gameState.food)) {
+      // Generate MON coin reward between 0.01 and 0.1
+      const monCoinReward = Number((Math.random() * 0.09 + 0.01).toFixed(4));
+      gameState.monCoinsEarned += monCoinReward;
+      console.log('MON coins earned:', monCoinReward, 'Total:', gameState.monCoinsEarned);
+      
+      // Generate new food position
+      gameState.food = generateFood(GRID_SIZE);
+      
+      // Update player balance in smart contract
+      if (gameState.ethereumAddress) {
+        rewardSinglePlayer(gameState.ethereumAddress, monCoinReward, socket)
+          .catch((error: unknown) => {
+            console.error('Failed to reward player:', error);
+            socket.emit('error', { message: 'Failed to update MON coin balance' });
+          });
+      }
+      
+      // Add the new head to the snake without removing the tail
+      gameState.snake.unshift(head);
+    } else {
+      // If no food was eaten, just move the snake
+      gameState.snake.unshift(head);
+      gameState.snake.pop();
+    }
+
+    // Check for game over conditions
+    const now = Date.now();
+    if (now >= gameState.endTime!) {
+      gameState.gameStatus = 'finished';
+      gameState.endTime = now;
+    }
+
+    // Emit updated game state
+    socket.emit('singlePlayerState', gameState);
+  });
+
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     
@@ -432,6 +623,7 @@ io.on('connection', (socket) => {
         break;
       }
     }
+    singlePlayerGames.delete(socket.id);
   });
 });
 

@@ -562,20 +562,27 @@ const LoadingSpinner = styled.div`
 interface HomeScreenProps {
   socket: any;
   onJoinRoom: (roomId: string, isHost: boolean, betAmount: number) => void;
+  onPlaceBet: (roomId: string, betAmount: number) => void;
+  onBackToHome: () => void;
+  onStartSinglePlayer: () => void;
   currentRoom: string | null;
   isBlockchainConnected: boolean;
-  connectedAccount: string;
+  ethereumAddress: string | null;
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ 
   socket, 
   onJoinRoom, 
+  onPlaceBet,
+  onBackToHome,
+  onStartSinglePlayer,
   currentRoom,
   isBlockchainConnected,
-  connectedAccount 
+  ethereumAddress
 }) => {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showJoinRoom, setShowJoinRoom] = useState(false);
+  const [showPvPMode, setShowPvPMode] = useState(false);
   const [roomId, setRoomId] = useState('');
   const [betAmount, setBetAmount] = useState('1');
   const [createdRoomId, setCreatedRoomId] = useState<string>('');
@@ -715,7 +722,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           <WalletLogo onClick={() => setShowWallet(!showWallet)} />
             
           <WalletWrapper isVisible={showWallet}>
-            <GameWallet playerAddress={connectedAccount} isBlockchainConnected={isBlockchainConnected} />
+            <GameWallet 
+              playerAddress={ethereumAddress || ''} 
+              isBlockchainConnected={isBlockchainConnected} 
+            />
           </WalletWrapper>
         </WalletContainer>
       </NavBar>
@@ -754,78 +764,94 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               )}
             </RoomInfo>
           </>
-        ) : !showCreateRoom && !showJoinRoom ? (
-          <ButtonGroup>
-            <Button onClick={() => setShowCreateRoom(true)}>Create Room</Button>
-            <Button onClick={() => setShowJoinRoom(true)}>Join Room</Button>
-          </ButtonGroup>
-        ) : showCreateRoom ? (
+        ) : showPvPMode ? (
           <>
-            <Label>Set Bet Amount (MON)</Label>
-            <Input
-              type="number"
-              min="0.1"
-              step="0.1"
-              value={betAmount}
-              onChange={(e) => setBetAmount(e.target.value)}
-              placeholder="Enter bet amount"
-            />
-            <ButtonGroup>
-              <Button onClick={handleCreateRoom} disabled={isLoading}>
-                {isLoading ? 'Creating...' : 'Create Room'}
-              </Button>
-              <Button onClick={() => setShowCreateRoom(false)}>Back</Button>
-            </ButtonGroup>
-            {transactionStatus !== 'idle' && (
-              <TransactionStatusIndicator status={transactionStatus}>
-                {transactionStatus === 'pending' && 'Confirming transaction...'}
-                {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
-                {transactionStatus === 'failed' && 'Transaction failed'}
-              </TransactionStatusIndicator>
-            )}
-            {error && (
-              <p style={{ color: 'red', marginTop: '1rem' }}>
-                {error}
-              </p>
+            {showCreateRoom ? (
+              <>
+                <Label>Set Bet Amount (MON)</Label>
+                <Input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={betAmount}
+                  onChange={(e) => setBetAmount(e.target.value)}
+                  placeholder="Enter bet amount"
+                />
+                <ButtonGroup>
+                  <Button onClick={handleCreateRoom} disabled={isLoading}>
+                    {isLoading ? 'Creating...' : 'Create Room'}
+                  </Button>
+                  <Button onClick={() => setShowCreateRoom(false)}>Back</Button>
+                </ButtonGroup>
+                {transactionStatus !== 'idle' && (
+                  <TransactionStatusIndicator status={transactionStatus}>
+                    {transactionStatus === 'pending' && 'Confirming transaction...'}
+                    {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
+                    {transactionStatus === 'failed' && 'Transaction failed'}
+                  </TransactionStatusIndicator>
+                )}
+                {error && (
+                  <p style={{ color: 'red', marginTop: '1rem' }}>
+                    {error}
+                  </p>
+                )}
+              </>
+            ) : showJoinRoom ? (
+              <>
+                <Label>Room ID</Label>
+                <Input
+                  type="text"
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                  placeholder="Enter room ID"
+                />
+                <Label>Bet Amount (MON)</Label>
+                <Input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={betAmount}
+                  onChange={(e) => setBetAmount(e.target.value)}
+                  placeholder="Enter bet amount"
+                />
+                <ButtonGroup>
+                  <Button onClick={handleJoinRoom} disabled={isLoading}>
+                    {isLoading ? 'Joining...' : 'Join Room'}
+                  </Button>
+                  <Button onClick={() => setShowJoinRoom(false)}>Back</Button>
+                </ButtonGroup>
+                {transactionStatus !== 'idle' && (
+                  <TransactionStatusIndicator status={transactionStatus}>
+                    {transactionStatus === 'pending' && 'Confirming transaction...'}
+                    {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
+                    {transactionStatus === 'failed' && 'Transaction failed'}
+                  </TransactionStatusIndicator>
+                )}
+                {error && (
+                  <p style={{ color: 'red', marginTop: '1rem' }}>
+                    {error}
+                  </p>
+                )}
+              </>
+            ) : (
+              <ButtonGroup>
+                <Button onClick={() => setShowCreateRoom(true)}>Create Room</Button>
+                <Button onClick={() => setShowJoinRoom(true)}>Join Room</Button>
+                <Button onClick={() => setShowPvPMode(false)}>Back</Button>
+              </ButtonGroup>
             )}
           </>
         ) : (
-          <>
-            <Label>Room ID</Label>
-            <Input
-              type="text"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              placeholder="Enter room ID"
-            />
-            <Label>Bet Amount (MON)</Label>
-            <Input
-              type="number"
-              min="0.1"
-              step="0.1"
-              value={betAmount}
-              onChange={(e) => setBetAmount(e.target.value)}
-              placeholder="Enter bet amount"
-            />
-            <ButtonGroup>
-              <Button onClick={handleJoinRoom} disabled={isLoading}>
-                {isLoading ? 'Joining...' : 'Join Room'}
-              </Button>
-              <Button onClick={() => setShowJoinRoom(false)}>Back</Button>
-            </ButtonGroup>
-            {transactionStatus !== 'idle' && (
-              <TransactionStatusIndicator status={transactionStatus}>
-                {transactionStatus === 'pending' && 'Confirming transaction...'}
-                {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
-                {transactionStatus === 'failed' && 'Transaction failed'}
-              </TransactionStatusIndicator>
-            )}
-            {error && (
-              <p style={{ color: 'red', marginTop: '1rem' }}>
-                {error}
-              </p>
-            )}
-          </>
+          <ButtonGroup>
+            <Button onClick={() => {
+              if (ethereumAddress) {
+                onStartSinglePlayer();
+              } else {
+                console.error('No Ethereum address available');
+              }
+            }}>Single Player</Button>
+            <Button onClick={() => setShowPvPMode(true)}>PvP Mode</Button>
+          </ButtonGroup>
         )}
       </Card>
       

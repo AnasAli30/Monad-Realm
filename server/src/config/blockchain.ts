@@ -11,7 +11,17 @@ export const serverWallet = new ethers.Wallet(SERVER_PRIVATE_KEY, provider);
 // Contract configuration
 export const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || 'your-contract-address';
 export const CONTRACT_ABI = [
-  // Add your contract ABI here
+  // Game functions
   "function endGame(string memory roomId, address winner) public",
   "function getRoomInfo(string memory roomId) public view returns (bool isActive, uint256 betAmount, address creator, address[] memory players)",
+  
+  // Player balance functions
+  "function depositToPlayer(address _player, uint256 _amount, bool _isReward) external payable",
+  "function depositToMultiplePlayers(address[] calldata _players, uint256[] calldata _amounts) external payable",
+  "function withdraw() external",
+  "function getPlayerBalance(address _player) external view returns (uint256)",
+  
+  // Events
+  "event SinglePlayerReward(address player, uint256 amount)",
+  "event Withdrawn(address player, uint256 amount)"
 ]; 

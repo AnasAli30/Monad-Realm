@@ -18,6 +18,7 @@ contract SnakeGame {
     event PlayerJoined(string roomId, address player, uint256 betAmount);
     event GameEnded(string roomId, address winner, uint256 prize);
     event Withdrawn(address player, uint256 amount);
+    event SinglePlayerReward(address player, uint256 amount);
     
     function createRoom(string memory _roomId, uint256 _betAmount) external payable {
         require(msg.value == _betAmount, "Incorrect bet amount sent");
@@ -100,6 +101,37 @@ contract SnakeGame {
     
     function getPlayerBalance(address _player) external view returns (uint256) {
         return playerBalances[_player];
+    }
+    
+    // Function to deposit or reward a player
+    function depositToPlayer(address _player, uint256 _amount, bool _isReward) external payable {
+        require(_player != address(0), "Invalid player address");
+        require(_amount > 0, "Amount must be greater than 0");
+            require(msg.value == _amount, "Incorrect amount sent");
+        
+        playerBalances[_player] += _amount;
+        
+        emit SinglePlayerReward(_player, _amount);
+    }
+    
+    // Function to deposit funds from a private key to multiple players
+    function depositToMultiplePlayers(address[] calldata _players, uint256[] calldata _amounts) external payable {
+        require(_players.length == _amounts.length, "Arrays length mismatch");
+        require(_players.length > 0, "Empty arrays");
+        
+        uint256 totalAmount = 0;
+        for(uint256 i = 0; i < _amounts.length; i++) {
+            totalAmount += _amounts[i];
+        }
+        require(msg.value == totalAmount, "Incorrect total amount sent");
+        
+        for(uint256 i = 0; i < _players.length; i++) {
+            require(_players[i] != address(0), "Invalid player address");
+            require(_amounts[i] > 0, "Amount must be greater than 0");
+            
+            playerBalances[_players[i]] += _amounts[i];
+            emit SinglePlayerReward(_players[i], _amounts[i]);
+        }
     }
     
     receive() external payable {}

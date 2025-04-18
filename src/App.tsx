@@ -6,6 +6,7 @@ import GameBoard from './components/GameBoard';
 import HomeScreen from './components/HomeScreen';
 import WalletConnect from './components/WalletConnect';
 import GameWallet from './components/GameWallet';
+import SinglePlayerGame from './components/SinglePlayerGame';
 
 interface Position {
   x: number;
@@ -52,6 +53,14 @@ const ResultModal = styled.div`
   z-index: 1000;
 `;
 
+const AppContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+`;
+
 const App: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<GameState>({
@@ -70,6 +79,7 @@ const App: React.FC = () => {
   const [showHomeScreen, setShowHomeScreen] = useState(true);
   const [isBlockchainConnected, setIsBlockchainConnected] = useState(false);
   const [connectedAccount, setConnectedAccount] = useState<string>('');
+  const [showSinglePlayer, setShowSinglePlayer] = useState(false);
 
   useEffect(() => {
     const newSocket = io('http://localhost:3001');
@@ -189,6 +199,12 @@ const App: React.FC = () => {
     setShowHomeScreen(true);
     setShowResults(false);
     setWinners([]);
+    setShowSinglePlayer(false);
+  };
+
+  const handleStartSinglePlayer = () => {
+    setShowHomeScreen(false);
+    setShowSinglePlayer(true);
   };
 
   const handleWalletConnect = (account: string) => {
@@ -197,7 +213,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <>
+    <AppContainer>
       <Toaster 
         position="top-center" 
         toastOptions={{
@@ -223,11 +239,19 @@ const App: React.FC = () => {
           <HomeScreen 
             socket={socket} 
             onJoinRoom={handleJoinRoom} 
+            onPlaceBet={handlePlaceBet}
+            onBackToHome={handleBackToHome}
             currentRoom={currentRoom}
             isBlockchainConnected={isBlockchainConnected}
-            connectedAccount={connectedAccount}
+            ethereumAddress={connectedAccount}
+            onStartSinglePlayer={handleStartSinglePlayer}
           />
         </>
+      ) : showSinglePlayer ? (
+        <SinglePlayerGame
+          onBackToHome={handleBackToHome}
+          ethereumAddress={connectedAccount}
+        />
       ) : (
         <GameBoard
           gameState={gameState}
@@ -257,7 +281,7 @@ const App: React.FC = () => {
           <button onClick={handleBackToHome}>Back to Home</button>
         </ResultModal>
       )}
-    </>
+    </AppContainer>
   );
 };
 
