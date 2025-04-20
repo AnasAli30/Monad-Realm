@@ -310,12 +310,80 @@ const Button = styled.button`
   }
 `;
 
+const GameSelectionModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+`;
+
+const GameSelectionContent = styled.div`
+  background: rgba(0, 0, 0, 0.9);
+  padding: 2rem;
+  border-radius: 10px;
+  color: white;
+  text-align: center;
+  border: 2px solid var(--color-secondary);
+  box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
+  animation: ${gameOverScale} 0.5s ease-out;
+  backdrop-filter: blur(5px);
+  width: 80%;
+  max-width: 500px;
+  
+  h2 {
+    color: var(--color-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+  }
+`;
+
+const GameButton = styled(Button)`
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 1.5rem;
+  font-size: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(97, 218, 251, 0.2);
+  border: 1px solid var(--color-secondary);
+
+  &:hover {
+    background: rgba(97, 218, 251, 0.3);
+    transform: translateY(-2px);
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const GameTitle = styled.div`
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--color-secondary);
+`;
+
+const GameDescription = styled.div`
+  font-size: 1rem;
+  opacity: 0.8;
+`;
+
 const SinglePlayerGame: React.FC<{ 
   onBackToHome: () => void;
   ethereumAddress?: string;
 }> = ({ onBackToHome, ethereumAddress }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [showRules, setShowRules] = useState(true);
+  const [showGameSelection, setShowGameSelection] = useState(true);
+  const [showRules, setShowRules] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<string>('');
   const [gameState, setGameState] = useState<GameState>({
     snake: [{ x: 15, y: 15 }],
     food: { x: 5, y: 5 },
@@ -329,17 +397,17 @@ const SinglePlayerGame: React.FC<{
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const gameLoopRef = useRef<number | null>(null);
   const lastMoveTimeRef = useRef<number>(0);
-  const MOVE_COOLDOWN = 150; // 150ms cooldown between moves (faster speed)
+  const MOVE_COOLDOWN = 150;
   const keysPressedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const newSocket = io('http://localhost:3001');
     setSocket(newSocket);
 
-    newSocket.emit('startSinglePlayer', { ethereumAddress });
-
     newSocket.on('singlePlayerState', (state: GameState) => {
-      setGameState(state);
+      if (state.gameStatus !== 'waiting') {
+        setGameState(state);
+      }
     });
 
     newSocket.on('monCoinReward', (data: { amount: number, txHash: string }) => {
@@ -377,6 +445,20 @@ const SinglePlayerGame: React.FC<{
       }
     };
   }, [ethereumAddress]);
+
+  const startGame = () => {
+    if (socket) {
+      socket.emit('startSinglePlayer', { ethereumAddress });
+    }
+    setGameState(prev => ({
+      ...prev,
+      gameStatus: 'inProgress',
+      startTime: Date.now(),
+      endTime: null
+    }));
+    setTimeLeft(GAME_DURATION);
+    setShowRules(false);
+  };
 
   useEffect(() => {
     if (gameState.gameStatus === 'inProgress') {
@@ -500,10 +582,33 @@ const SinglePlayerGame: React.FC<{
   return (
     <Container>
       <ToastContainer />
-      {showRules && (
+      {showGameSelection && (
+        <GameSelectionModal>
+          <GameSelectionContent>
+            <h2>Choose a Game</h2>
+            <GameButton onClick={() => {
+              setSelectedGame('snake');
+              setShowGameSelection(false);
+              setShowRules(true);
+            }}>
+              <GameTitle>Snake Game</GameTitle>
+              <GameDescription>Control a snake to collect food and earn MON coins</GameDescription>
+            </GameButton>
+            <GameButton onClick={() => {
+              setSelectedGame('dice');
+              setShowGameSelection(false);
+              setShowRules(true);
+            }}>
+              <GameTitle>Dice Game</GameTitle>
+              <GameDescription>Roll dice and win MON coins based on your luck</GameDescription>
+            </GameButton>
+          </GameSelectionContent>
+        </GameSelectionModal>
+      )}
+      {showRules && selectedGame === 'snake' && (
         <RulesModal>
           <ModalContent>
-            <h2>Game Rules</h2>
+            <h2>Snake Game Rules</h2>
             <p>Welcome to Snake Game! Here's how to play:</p>
             <ul>
               <li>Use arrow keys to control the snake</li>
@@ -512,19 +617,48 @@ const SinglePlayerGame: React.FC<{
               <li>Game ends when you hit a wall or time runs out (3 minutes)</li>
               <li>Click on MON rewards to view transactions on Monad Explorer</li>
             </ul>
+            <Button onClick={startGame}>Start Game</Button>
+          </ModalContent>
+        </RulesModal>
+      )}
+      {showRules && selectedGame === 'dice' && (
+        <RulesModal>
+          <ModalContent>
+            <h2>Dice Game Rules</h2>
+            <p>Welcome to Dice Game! Here's how to play:</p>
+            <ul>
+              <li>Roll two dice and win based on the sum</li>
+              <li>Sum of 7: Win 2x your bet</li>
+              <li>Sum of 11: Win 3x your bet</li>
+              <li>Double numbers: Win 5x your bet</li>
+              <li>Any other sum: Lose your bet</li>
+            </ul>
             <Button onClick={() => setShowRules(false)}>Start Game</Button>
           </ModalContent>
         </RulesModal>
       )}
-      <GameContainer>
-        <ScorePanel>
-          <div>MON: {gameState.monCoinsEarned.toFixed(4)}</div>
-          <Timer>Time: {formatTime(timeLeft)}</Timer>
-        </ScorePanel>
-        <Grid size={GRID_SIZE}>
-          {renderGrid()}
-        </Grid>
-      </GameContainer>
+      {!showGameSelection && !showRules && selectedGame === 'snake' && (
+        <GameContainer>
+          <ScorePanel>
+            <div>MON: {gameState.monCoinsEarned.toFixed(4)}</div>
+            <Timer>Time: {formatTime(timeLeft)}</Timer>
+          </ScorePanel>
+          <Grid size={GRID_SIZE}>
+            {renderGrid()}
+          </Grid>
+        </GameContainer>
+      )}
+      {!showGameSelection && !showRules && selectedGame === 'dice' && (
+        <GameContainer>
+          <ScorePanel>
+            <div>MON: {gameState.monCoinsEarned.toFixed(4)}</div>
+          </ScorePanel>
+          {/* Dice game UI will be implemented here */}
+          <div style={{ color: 'white', textAlign: 'center', marginTop: '2rem' }}>
+            Dice Game Coming Soon!
+          </div>
+        </GameContainer>
+      )}
 
       {gameState.gameStatus === 'finished' && (
         <GameOverModal>
