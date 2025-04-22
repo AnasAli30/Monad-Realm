@@ -148,61 +148,117 @@ interface CellProps {
   $isFood: boolean;
   $isHead?: boolean;
   $direction?: string;
+  $segmentType?: 'head' | 'body' | 'tail';
+  $prevSegment?: Position;
+  $nextSegment?: Position;
 }
 
 const Cell = styled.div<CellProps>`
-  background-color: ${props => 
-    props.$isSnake ? 'var(--color-secondary)' : 
-    props.$isFood ? '#ff4444' : 'transparent'
-  };
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background-color 0.1s ease;
+  width: 100%;
+  height: 100%;
   position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.1s ease;
   overflow: hidden;
   
   ${props => props.$isSnake && css`
-    animation: ${snakePulse} 2s infinite;
-    border-radius: 4px;
-  `}
-  
-  ${props => props.$isHead && css`
-    &::before {
-      content: '';
-      position: absolute;
-      width: 60%;
-      height: 60%;
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 50%;
-      top: 20%;
-      left: 20%;
-    }
+    background: ${props.$isHead ? 'var(--color-warning)' : 'var(--color-secondary)'};
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transform: scale(0.85);
+    z-index: 2;
     
-    &::after {
-      content: '';
-      position: absolute;
-      width: 30%;
-      height: 30%;
-      background: rgba(0, 0, 0, 0.8);
-      border-radius: 50%;
-      top: 35%;
-      left: 35%;
-    }
+    ${props.$isHead && css`
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        width: 25%;
+        height: 25%;
+        background: #fff;
+        border-radius: 50%;
+        top: 20%;
+        box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5);
+      }
+      
+      &::before {
+        left: ${props.$direction === 'LEFT' ? '60%' : '15%'};
+      }
+      
+      &::after {
+        right: ${props.$direction === 'RIGHT' ? '60%' : '15%'};
+      }
+      
+      ${props.$direction === 'UP' && css`
+        transform: rotate(-90deg) scale(0.85);
+      `}
+      
+      ${props.$direction === 'DOWN' && css`
+        transform: rotate(90deg) scale(0.85);
+      `}
+      
+      ${props.$direction === 'LEFT' && css`
+        transform: rotate(180deg) scale(0.85);
+      `}
+    `}
+    
+    ${!props.$isHead && css`
+      background: linear-gradient(
+        45deg,
+        var(--color-secondary) 0%,
+        var(--color-primary) 50%,
+        var(--color-secondary) 100%
+      );
+      animation: ${snakePulse} 2s infinite;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          rgba(255, 255, 255, 0.2),
+          transparent 50%,
+          rgba(0, 0, 0, 0.2)
+        );
+        border-radius: 8px;
+      }
+    `}
   `}
   
   ${props => props.$isFood && css`
-    animation: ${foodAppear} 0.5s ease-out;
-    border-radius: 50%;
-    
     &::before {
       content: '';
       position: absolute;
       width: 70%;
       height: 70%;
-      background: radial-gradient(circle at 30% 30%, #ff8888, #ff4444);
-      border-radius: 50%;
       top: 15%;
       left: 15%;
-      box-shadow: 0 0 10px rgba(255, 68, 68, 0.7);
+      background: radial-gradient(
+        circle at 30% 30%,
+        #ff8888,
+        #ff4444
+      );
+      border-radius: 50%;
+      box-shadow: 
+        0 0 15px rgba(255, 68, 68, 0.7),
+        inset 0 0 10px rgba(255, 255, 255, 0.5);
+      animation: ${foodAppear} 0.5s ease-out, ${pulse} 2s infinite;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      width: 20%;
+      height: 30%;
+      top: 5%;
+      left: 45%;
+      background: #4a7;
+      border-radius: 0 50% 0 50%;
+      transform: rotate(-45deg);
+      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
     }
   `}
 `;
@@ -399,6 +455,8 @@ const SinglePlayerGame: React.FC<{
   const lastMoveTimeRef = useRef<number>(0);
   const MOVE_COOLDOWN = 150;
   const keysPressedRef = useRef<Set<string>>(new Set());
+  const pendingRewardsRef = useRef<Map<string, number>>(new Map());
+  const toastIdsRef = useRef<Map<string, string | number>>(new Map());
 
   useEffect(() => {
     const newSocket = io('http://localhost:3001');
@@ -410,20 +468,16 @@ const SinglePlayerGame: React.FC<{
       }
     });
 
-    newSocket.on('monCoinReward', (data: { amount: number, txHash: string }) => {
-      toast.success(
-        <div 
-          onClick={() => window.open(`https://testnet.monadexplorer.com/tx/${data.txHash}`, '_blank')}
-          style={{ cursor: 'pointer' }}
-        >
-          <div>🎉 +{data.amount.toFixed(4)} MON</div>
-          <div style={{ fontSize: '0.8em', wordBreak: 'break-all' }}>
-            TX: {data.txHash}
-          </div>
+    newSocket.on('monCoinRewardPending', (data: { amount: number, rewardId: string }) => {
+      pendingRewardsRef.current.set(data.rewardId, data.amount);
+      const toastId = toast.loading(
+        <div>
+          <div>⏳ Processing {data.amount.toFixed(4)} MON</div>
+          <div style={{ fontSize: '0.8em', opacity: 0.7 }}>Waiting for transaction confirmation...</div>
         </div>,
         {
           position: "top-right",
-          autoClose: 5000,
+          autoClose: false,
           hideProgressBar: false,
           closeOnClick: false,
           pauseOnHover: true,
@@ -431,6 +485,33 @@ const SinglePlayerGame: React.FC<{
           progress: undefined,
         }
       );
+      toastIdsRef.current.set(data.rewardId, toastId);
+    });
+
+    newSocket.on('monCoinReward', (data: { amount: number, txHash: string, rewardId: string }) => {
+      const amount = pendingRewardsRef.current.get(data.rewardId) || data.amount;
+      pendingRewardsRef.current.delete(data.rewardId);
+      const toastId = toastIdsRef.current.get(data.rewardId);
+      
+      if (toastId) {
+        toast.update(toastId, {
+          render: (
+            <div 
+              onClick={() => window.open(`https://testnet.monadexplorer.com/tx/${data.txHash}`, '_blank')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div>✅ +{amount.toFixed(4)} MON</div>
+              <div style={{ fontSize: '0.8em', wordBreak: 'break-all' }}>
+                TX: {data.txHash}
+              </div>
+            </div>
+          ),
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+        });
+        toastIdsRef.current.delete(data.rewardId);
+      }
     });
 
     newSocket.on('error', (error: { message: string }) => {
@@ -552,11 +633,38 @@ const SinglePlayerGame: React.FC<{
 
   const renderGrid = () => {
     const grid: React.ReactElement[] = [];
+    
     for (let y = 0; y < GRID_SIZE; y++) {
       for (let x = 0; x < GRID_SIZE; x++) {
-        const isSnake = gameState.snake.some(segment => segment.x === x && segment.y === y);
+        const currentPos = { x, y };
+        const snakeIndex = gameState.snake.findIndex(
+          segment => segment.x === x && segment.y === y
+        );
+        
+        const isSnake = snakeIndex !== -1;
         const isFood = gameState.food.x === x && gameState.food.y === y;
-        const isHead = gameState.snake[0].x === x && gameState.snake[0].y === y;
+        const isHead = snakeIndex === 0;
+        
+        let prevSegment = undefined;
+        let nextSegment = undefined;
+        let segmentType: 'head' | 'body' | 'tail' | undefined = undefined;
+        
+        if (isSnake) {
+          if (isHead) {
+            segmentType = 'head';
+          } else if (snakeIndex === gameState.snake.length - 1) {
+            segmentType = 'tail';
+          } else {
+            segmentType = 'body';
+          }
+          
+          if (snakeIndex > 0) {
+            prevSegment = gameState.snake[snakeIndex - 1];
+          }
+          if (snakeIndex < gameState.snake.length - 1) {
+            nextSegment = gameState.snake[snakeIndex + 1];
+          }
+        }
         
         grid.push(
           <Cell 
@@ -565,10 +673,14 @@ const SinglePlayerGame: React.FC<{
             $isFood={isFood}
             $isHead={isHead}
             $direction={isHead ? gameState.direction : undefined}
+            $segmentType={segmentType}
+            $prevSegment={prevSegment}
+            $nextSegment={nextSegment}
           />
         );
       }
     }
+    
     return grid;
   };
 

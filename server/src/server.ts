@@ -197,6 +197,15 @@ function generateMonCoinReward(): number {
 // Function to update player balance in smart contract for single player mode
 async function rewardSinglePlayer(ethereumAddress: string, amount: number, socket: any): Promise<void> {
   try {
+    // Generate a unique reward ID
+    const rewardId = Math.random().toString(36).substring(2, 8);
+
+    // Emit pending reward event
+    socket.emit('monCoinRewardPending', {
+      amount,
+      rewardId
+    });
+
     // Call the smart contract to reward the player with isReward=true
     const txHash = await depositToPlayer(
       ethereumAddress,
@@ -212,7 +221,8 @@ async function rewardSinglePlayer(ethereumAddress: string, amount: number, socke
     // Emit the reward details to the client
     socket.emit('monCoinReward', {
       amount,
-      txHash
+      txHash,
+      rewardId
     });
   } catch (error: unknown) {
     console.error('Error rewarding single player on blockchain:', error);
