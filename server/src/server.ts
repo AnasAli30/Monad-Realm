@@ -62,6 +62,10 @@ interface Room {
   potAmount: number;
   minPlayers: number;
   betAmount: number;
+  isPrivate: boolean;
+  creator: string;
+  createdAt: number;
+  maxPlayers: number;
 }
 
 interface SinglePlayerGameState {
@@ -94,7 +98,7 @@ function generateRoomId(): string {
 const rooms = new Map<string, Room>();
 const singlePlayerGames = new Map<string, SinglePlayerGameState>();
 
-function createRoom(betAmount: number, roomId: string): Room {
+function createRoom(betAmount: number, roomId: string, isPrivate: boolean, creator: string): Room {
   return {
     id: roomId,
     players: new Map(),
@@ -105,7 +109,11 @@ function createRoom(betAmount: number, roomId: string): Room {
     endTime: null,
     potAmount: 0,
     minPlayers: 2,
-    betAmount: betAmount
+    betAmount: betAmount,
+    isPrivate: isPrivate,
+    creator: creator,
+    createdAt: Date.now(),
+    maxPlayers: 2
   };
 }
 
@@ -292,11 +300,34 @@ function updateSinglePlayerGameState(gameState: SinglePlayerGameState, socket: a
   gameState.snake.pop();
 }
 
+// Add function to get public rooms
+function getPublicRooms(): any[] {
+  const publicRooms = [];
+  for (const [_, room] of rooms) {
+    if (!room.isPrivate && room.gameStatus === 'waiting') {
+      publicRooms.push({
+        id: room.id,
+        creator: room.creator,
+        betAmount: room.betAmount,
+        players: room.players.size,
+        maxPlayers: room.maxPlayers,
+        createdAt: room.createdAt
+      });
+    }
+  }
+  return publicRooms;
+}
+
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
 
-  socket.on('createRoom', ({ roomId, betAmount, ethereumAddress }) => {
-    const room = createRoom(betAmount, roomId);
+  // Add handler for getting public rooms
+  socket.on('getPublicRooms', () => {
+    socket.emit('publicRooms', getPublicRooms());
+  });
+
+  socket.on('createRoom', ({ roomId, betAmount, ethereumAddress, isPrivate }) => {
+    const room = createRoom(betAmount, roomId, isPrivate, ethereumAddress);
     socket.join(roomId);
     
     // Initialize host player
@@ -327,6 +358,11 @@ io.on('connection', (socket) => {
       betAmount: room.betAmount
     });
 
+    // Broadcast updated public rooms list
+    if (!isPrivate) {
+      io.emit('publicRooms', getPublicRooms());
+    }
+
     // Send initial game state
     socket.emit('gameState', {
       players: Array.from(room.players.values()),
@@ -339,7 +375,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('joinRoom', ({ roomId, ethereumAddress }) => {
+  socket.on('joinRoom', ({ roomId, ethereumAddress, betAmount }) => {
     const room = rooms.get(roomId);
     if (!room) {
       socket.emit('error', { message: 'Room not found' });
@@ -348,6 +384,11 @@ io.on('connection', (socket) => {
 
     if (room.gameStatus !== 'waiting') {
       socket.emit('error', { message: 'Game already in progress' });
+      return;
+    }
+
+    if (room.players.size >= room.maxPlayers) {
+      socket.emit('error', { message: 'Room is full' });
       return;
     }
 
@@ -366,7 +407,7 @@ io.on('connection', (socket) => {
       }],
       direction: 'right',
       score: 0,
-      betAmount: 0,
+      betAmount: betAmount || room.betAmount,
       ready: false,
       isHost: false,
       ethereumAddress: ethereumAddress
@@ -379,6 +420,11 @@ io.on('connection', (socket) => {
       roomId: room.id,
       betAmount: room.betAmount
     });
+
+    // Broadcast updated public rooms list
+    if (!room.isPrivate) {
+      io.emit('publicRooms', getPublicRooms());
+    }
 
     // Broadcast updated game state to all players in room
     io.to(roomId).emit('gameState', {
@@ -622,23 +668,19 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     
-    // Find and remove player from their room
     for (const [roomId, room] of rooms.entries()) {
       const player = room.players.get(socket.id);
       if (player) {
         room.potAmount -= player.betAmount;
         room.players.delete(socket.id);
         
-        // End game if not enough players
         if (room.players.size < room.minPlayers && room.gameStatus === 'inProgress') {
           endGame(room);
         }
 
-        // Clean up room if empty
         if (room.players.size === 0) {
           rooms.delete(roomId);
         } else {
-          // Broadcast updated game state
           io.to(roomId).emit('gameState', {
             players: Array.from(room.players.values()),
             food: room.food,
@@ -648,6 +690,11 @@ io.on('connection', (socket) => {
             endTime: room.endTime,
             potAmount: room.potAmount
           });
+        }
+
+        // Broadcast updated public rooms list if it was a public room
+        if (!room.isPrivate) {
+          io.emit('publicRooms', getPublicRooms());
         }
         break;
       }

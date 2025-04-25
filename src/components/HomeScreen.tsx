@@ -26,12 +26,22 @@ interface HomeScreenProps {
   ethereumAddress: string | null;
 }
 
+interface GameRoomInfo {
+  id: string;
+  creator: string;
+  betAmount: number;
+  isPrivate: boolean;
+  createdAt: number;
+  players: number;
+  maxPlayers: number;
+}
+
 const pulse = keyframes`
   0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.01);
   }
   100% {
     transform: scale(1);
@@ -119,19 +129,44 @@ const ButtonGroup = styled.div`
   margin-top: 2rem;
 `;
 
-const Button = styled.button`
-  padding: 1rem 1.5rem;
-  background: linear-gradient(45deg, #61dafb, #2196f3);
+const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
+  padding: 1rem 2rem;
+  background: ${props => {
+    switch (props.variant) {
+      case 'primary':
+        return 'linear-gradient(45deg, #4CAF50, #45a049)';
+      case 'secondary':
+        return 'linear-gradient(45deg, #2196F3, #1976D2)';
+      case 'danger':
+        return 'linear-gradient(45deg, #f44336, #d32f2f)';
+      default:
+        return 'linear-gradient(45deg, #4CAF50, #45a049)';
+    }
+  }};
   color: white;
-  border: none;
-  border-radius: 8px;
+  border: 10px solid rgb(255, 255, 255) !important;
+  border-radius: 160px !important;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  
+  box-shadow: ${props => {
+    switch (props.variant) {
+      case 'primary':
+        return '0 4px 15px rgba(76, 175, 80, 0.3)';
+      case 'secondary':
+        return '0 4px 15px rgba(33, 150, 243, 0.3)';
+      case 'danger':
+        return '0 4px 15px rgba(244, 67, 54, 0.3)';
+      default:
+        return '0 4px 15px rgba(76, 175, 80, 0.3)';
+    }
+  }};
 
   &::before {
     content: '';
@@ -151,7 +186,18 @@ const Button = styled.button`
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
+    box-shadow: ${props => {
+      switch (props.variant) {
+        case 'primary':
+          return '0 6px 20px rgba(76, 175, 80, 0.4)';
+        case 'secondary':
+          return '0 6px 20px rgba(33, 150, 243, 0.4)';
+        case 'danger':
+          return '0 6px 20px rgba(244, 67, 54, 0.4)';
+        default:
+          return '0 6px 20px rgba(76, 175, 80, 0.4)';
+      }
+    }};
   }
 
   &:hover::before {
@@ -203,8 +249,7 @@ const Card = styled.div`
   }
 `;
 
-
-const RoomInfo = styled.div`
+const RoomInfoContainer = styled.div`
   margin-bottom: 2rem;
 `;
 
@@ -437,6 +482,136 @@ const ConnectWalletMessage = styled.div`
   }
 `;
 
+const RoomPool = styled.div`
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(97, 218, 251, 0.2);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(97, 218, 251, 0.3);
+    border-radius: 4px;
+  }
+`;
+
+const RoomCard = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(97, 218, 251, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: rgba(97, 218, 251, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const RoomCardInfo = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 0;
+`;
+
+const RoomDetails = styled.div`
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+`;
+
+const RoomCreator = styled.span`
+  color: #61dafb;
+  font-weight: 500;
+`;
+
+const RoomBet = styled.span`
+  color: #4caf50;
+  font-weight: 500;
+`;
+
+const RoomPlayers = styled.span`
+  color: #ff9800;
+`;
+
+const PrivateToggle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+`;
+
+const ToggleSwitch = styled.label`
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  span {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.2);
+    transition: .4s;
+    border-radius: 34px;
+
+    &:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+  }
+
+  input:checked + span {
+    background-color: #61dafb;
+  }
+
+  input:checked + span:before {
+    transform: translateX(26px);
+  }
+`;
+
 const HomeScreen: React.FC<HomeScreenProps> = ({ 
   socket, 
   onJoinRoom, 
@@ -463,6 +638,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isMinting, setIsMinting] = useState(false);
   const [hasNFT, setHasNFT] = useState(false);
+  const [publicRooms, setPublicRooms] = useState<GameRoomInfo[]>([]);
+  const [isPrivateRoom, setIsPrivateRoom] = useState(false);
 
   const handleButtonClick = (callback: () => void) => {
     audioManager.playClickSound();
@@ -491,29 +668,26 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleCreateRoom = async () => {
-      setIsLoading(true);
-      setTransactionStatus('pending');
-      setError(null);
+    setIsLoading(true);
+    setTransactionStatus('pending');
+    setError(null);
     try {
-      // Generate room ID first
       const roomId = Math.random().toString(36).substring(2, 8);
       
-      // Create room on blockchain first
       await createRoomOnBlockchain(
         roomId,
         parseFloat(betAmount),
         (status) => setTransactionStatus(status)
       );
       
-      // After blockchain confirmation, create room on socket.io server
       if (socket) {
         socket.emit('createRoom', { 
           roomId,
           betAmount: parseFloat(betAmount),
-          ethereumAddress 
+          ethereumAddress,
+          isPrivate: isPrivateRoom
         });
 
-        // Listen for room creation confirmation
         socket.once('roomCreated', (data) => {
           if (data.roomId === roomId) {
             setCreatedRoomId(roomId);
@@ -523,7 +697,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           }
         });
 
-        // Listen for errors
         socket.once('error', (error) => {
           throw new Error(error.message);
         });
@@ -542,17 +715,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     setTransactionStatus('pending');
     setError(null);
     try {
-      // First verify the room exists and get its info
       const roomInfo = await getRoomInfoFromBlockchain(roomId);
       
       if (!roomInfo.isActive) {
         throw new Error('Room does not exist or is no longer active');
       }
 
-      // Join room on blockchain
       await joinRoomOnBlockchain(roomId, parseFloat(betAmount));
       
-      // After blockchain confirmation, join room on socket.io server
       if (socket) {
         socket.emit('joinRoom', { 
           roomId, 
@@ -560,7 +730,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           betAmount: parseFloat(betAmount)
         });
 
-        // Listen for room join confirmation
         socket.once('roomJoined', (data) => {
           if (data.roomId === roomId) {
             setTransactionStatus('confirmed');
@@ -568,7 +737,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           }
         });
 
-        // Listen for errors
         socket.once('error', (error) => {
           throw new Error(error.message);
         });
@@ -595,10 +763,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     try {
       setIsMinting(true);
 
-      // Encode the fuse key with the user's address
       const encodedFuseKey = encodeFuseKey(ethereumAddress);
 
-      // First, get the signature from the server
       const signatureResponse = await fetch('http://localhost:3001/api/generate-signature', {
         method: 'POST',
         headers: {
@@ -616,17 +782,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         throw new Error(signatureData.error || 'Failed to get signature');
       }
 
-      // Get the provider and signer from the user's wallet
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
 
-      // Get the contract instance
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-      // Call the mint function directly from the user's wallet
       const tx = await contract.mint(signatureData.signature);
       
-      // Wait for the transaction to be mined
       await tx.wait();
 
       toast.success('NFT minted successfully!', {
@@ -642,6 +804,31 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const handleNFTStatusChange = (status: boolean) => {
     setHasNFT(status);
+  };
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('publicRooms', (rooms: GameRoomInfo[]) => {
+        setPublicRooms(rooms);
+      });
+
+      socket.emit('getPublicRooms');
+
+      const interval = setInterval(() => {
+        socket.emit('getPublicRooms');
+      }, 10000);
+
+      return () => {
+        clearInterval(interval);
+        socket.off('publicRooms');
+      };
+    }
+  }, [socket]);
+
+  const handleJoinPublicRoom = (roomId: string, betAmount: number) => {
+    setRoomId(roomId);
+    setBetAmount(betAmount.toString());
+    handleJoinRoom();
   };
 
   return (
@@ -672,7 +859,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             />
           ) : showRoomCreated ? (
             <>
-              <RoomInfo>
+              <RoomInfoContainer>
                 <SuccessMessage>Room Created Successfully!</SuccessMessage>
                 <RoomId>{createdRoomId}</RoomId>
                 <ShareText>Share this ID with other players</ShareText>
@@ -681,10 +868,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 </CopyButton>
                 {transactionStatus === 'confirmed' && (
                   <ButtonGroup>
-                    <Button onClick={handleJoinCreatedRoom}>
+                    <Button variant="primary" onClick={handleJoinCreatedRoom}>
                       Join Room
                     </Button>
-                    <Button onClick={() => handleButtonClick(() => {
+                    <Button variant="danger" onClick={() => handleButtonClick(() => {
                       setShowRoomCreated(false);
                       setCreatedRoomId('');
                       setTransactionStatus('idle');
@@ -693,7 +880,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     </Button>
                   </ButtonGroup>
                 )}
-              </RoomInfo>
+              </RoomInfoContainer>
             </>
           ) : showPvPMode ? (
             <>
@@ -708,11 +895,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     onChange={(e) => setBetAmount(e.target.value)}
                     placeholder="Enter bet amount"
                   />
+                  <PrivateToggle>
+                    <span>Private Room</span>
+                    <ToggleSwitch>
+                      <input
+                        type="checkbox"
+                        checked={isPrivateRoom}
+                        onChange={(e) => setIsPrivateRoom(e.target.checked)}
+                      />
+                      <span></span>
+                    </ToggleSwitch>
+                  </PrivateToggle>
                   <ButtonGroup>
-                    <Button onClick={() => handleButtonClick(handleCreateRoom)} disabled={isLoading}>
+                    <Button variant="primary" onClick={() => handleButtonClick(handleCreateRoom)} disabled={isLoading}>
                       {isLoading ? 'Creating...' : 'Create Room'}
                     </Button>
-                    <Button onClick={() => handleButtonClick(() => setShowCreateRoom(false))}>Back</Button>
+                    <Button variant="danger" onClick={() => handleButtonClick(() => setShowCreateRoom(false))}>
+                      Back
+                    </Button>
                   </ButtonGroup>
                   {transactionStatus !== 'idle' && (
                     <TransactionStatusIndicator status={transactionStatus}>
@@ -729,12 +929,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 </>
               ) : showJoinRoom ? (
                 <>
-                  <Label>Room ID</Label>
+                  <Label>Join Private Room</Label>
                   <Input
                     type="text"
                     value={roomId}
                     onChange={(e) => setRoomId(e.target.value)}
-                    placeholder="Enter room ID"
+                    placeholder="Enter private room ID"
                   />
                   <Label>Bet Amount (MON)</Label>
                   <Input
@@ -746,38 +946,64 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     placeholder="Enter bet amount"
                   />
                   <ButtonGroup>
-                    <Button onClick={() => handleButtonClick(handleJoinRoom)} disabled={isLoading}>
-                      {isLoading ? 'Joining...' : 'Join Room'}
+                    <Button variant="primary" onClick={() => handleButtonClick(handleJoinRoom)} disabled={isLoading}>
+                      {isLoading ? 'Joining...' : 'Join Private Room'}
                     </Button>
-                    <Button onClick={() => handleButtonClick(() => setShowJoinRoom(false))}>Back</Button>
+                    <Button variant="danger" onClick={() => handleButtonClick(() => setShowJoinRoom(false))}>
+                      Back
+                    </Button>
                   </ButtonGroup>
-                  {transactionStatus !== 'idle' && (
-                    <TransactionStatusIndicator status={transactionStatus}>
-                      {transactionStatus === 'pending' && 'Confirming transaction...'}
-                      {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
-                      {transactionStatus === 'failed' && 'Transaction failed'}
-                    </TransactionStatusIndicator>
-                  )}
-                  {error && (
-                    <p style={{ color: 'red', marginTop: '1rem' }}>
-                      {error}
-                    </p>
-                  )}
+
+                  <Label style={{ marginTop: '2rem' }}>Available Public Rooms</Label>
+                  <RoomPool>
+                    {publicRooms.map((room) => (
+                      <RoomCard key={room.id}>
+                        <RoomCardInfo>
+                          <RoomCreator>
+                            {room.creator.substring(0, 6)}...{room.creator.substring(38)}
+                          </RoomCreator>
+                          <RoomDetails>
+                            <RoomBet>{room.betAmount} MON</RoomBet>
+                            <RoomPlayers>{room.players}/{room.maxPlayers} Players</RoomPlayers>
+                            <span>{Math.floor((Date.now() - room.createdAt) / 1000 / 60)}m ago</span>
+                          </RoomDetails>
+                        </RoomCardInfo>
+                        <Button
+                          variant="secondary"
+                          onClick={() => handleJoinPublicRoom(room.id, room.betAmount)}
+                          disabled={isLoading}
+                        >
+                          Join
+                        </Button>
+                      </RoomCard>
+                    ))}
+                    {publicRooms.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '1rem', color: 'rgba(255, 255, 255, 0.5)' }}>
+                        No public rooms available
+                      </div>
+                    )}
+                  </RoomPool>
                 </>
               ) : (
                 <ButtonGroup>
-                  <Button onClick={() => handleButtonClick(() => setShowCreateRoom(true))}>Create Room</Button>
-                  <Button onClick={() => handleButtonClick(() => setShowJoinRoom(true))}>Join Room</Button>
-                  <Button onClick={() => handleButtonClick(() => setShowPvPMode(false))}>Back</Button>
+                  <Button variant="primary" onClick={() => handleButtonClick(() => setShowCreateRoom(true))}>
+                    Create Room
+                  </Button>
+                  <Button variant="secondary" onClick={() => handleButtonClick(() => setShowJoinRoom(true))}>
+                    Join Room
+                  </Button>
+                  <Button variant="danger" onClick={() => handleButtonClick(() => setShowPvPMode(false))}>
+                    Back
+                  </Button>
                 </ButtonGroup>
               )}
             </>
           ) : (
             <ButtonGroup>
-              <Button onClick={handleSinglePlayerClick}>
+              <Button variant="primary" onClick={handleSinglePlayerClick}>
                 SINGLE PLAYER
               </Button>
-              <Button onClick={() => handleButtonClick(() => setShowPvPMode(true))}>
+              <Button variant="secondary" onClick={() => handleButtonClick(() => setShowPvPMode(true))}>
                 PVP
               </Button>
             </ButtonGroup>
