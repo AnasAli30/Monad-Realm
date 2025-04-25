@@ -8,7 +8,9 @@ import { encodeFuseKey } from '../utils/fuseEncoder';
 // Add type declaration for window.ethereum
 declare global {
   interface Window {
-    ethereum?: any;
+    readonly ethereum: {
+      request: (args: { method: string; params?: any[] }) => Promise<any>;
+    }
   }
 }
 

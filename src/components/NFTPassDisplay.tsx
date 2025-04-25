@@ -188,6 +188,8 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
       const total = await contract.MAX_SUPPLY();
       const minted = await contract.getCurrentTokenId();
+      console.log(total.toNumber());
+      console.log(minted.toNumber());
       setTotalSupply(total.toNumber());
       setMintedSupply(minted.toNumber());
     } catch (error) {

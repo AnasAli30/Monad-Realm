@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Snake3D from './Snake3D';
+import JetpackGame from './JetpackGame';
 
 const GAME_DURATION = 180000; // 3 minutes in milliseconds
 const GRID_SIZE = 30;
@@ -403,11 +404,15 @@ const GameSelectionContent = styled.div`
   border-radius: 10px;
   color: white;
   text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   border: 2px solid var(--color-secondary);
   box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
   backdrop-filter: blur(5px);
-  width: 80%;
-  max-width: 500px;
+  width: 110% !important;
+  max-width: 90%;
+  height: 80%;
   
   h2 {
     color: var(--color-secondary);
@@ -417,24 +422,39 @@ const GameSelectionContent = styled.div`
 `;
 
 const GameButton = styled(Button)`
-  width: 100%;
-  margin-bottom: 1rem;
+  width: 110%;
+  height: 100%;
+  margin: 1rem;
   padding: 1.5rem;
   font-size: 1.2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  background: rgba(97, 218, 251, 0.2);
+  background:url('/images/snake.jpeg');
+  background-size: cover;
+  background-position:center;
   border: 1px solid var(--color-secondary);
 
   &:hover {
-    background: rgba(97, 218, 251, 0.3);
+    background:url('/images/snake.jpeg');
+    background-size: cover;
+    background-position:bottom;
     transform: translateY(-2px);
   }
 
   &:last-child {
+    background:url('/images/jerry.jpeg');
+    background-size: cover;
+    background-position:center;
     margin-bottom: 0;
+    
+    &:hover {
+      background:url('/images/jerry.jpeg');
+      background-size: cover;
+      background-position:bottom;
+    }
   }
 `;
 
@@ -724,7 +744,7 @@ const SinglePlayerGame: React.FC<{
       {showGameSelection && (
         <GameSelectionModal>
           <GameSelectionContent>
-            <h2>Select a Game</h2>
+
             <GameButton onClick={() => {
               setSelectedGame('snake');
               setShowGameSelection(false);
@@ -734,17 +754,16 @@ const SinglePlayerGame: React.FC<{
               <GameDescription>Control a snake to collect food and earn MON coins</GameDescription>
             </GameButton>
             <GameButton onClick={() => {
-              setSelectedGame('dice');
+              setSelectedGame('jetpack');
               setShowGameSelection(false);
               setShowRules(true);
             }}>
-              <GameTitle>Dice Game</GameTitle>
-              <GameDescription>Roll dice and win MON coins based on your luck</GameDescription>
+              <GameTitle>Jetpack Jerry</GameTitle>
+              <GameDescription>Control a jetpack to collect coins and earn MON</GameDescription>
             </GameButton>
           </GameSelectionContent>
         </GameSelectionModal>
       )}
-      
       {showRules && selectedGame === 'snake' && (
         <RulesModal>
           <ModalContent>
@@ -763,23 +782,23 @@ const SinglePlayerGame: React.FC<{
         </RulesModal>
       )}
       
-      {showRules && selectedGame === 'dice' && (
+      {showRules && selectedGame === 'jetpack' && (
         <RulesModal>
           <ModalContent>
-            <h2>Dice Game Rules</h2>
-            <p>Welcome to Dice Game! Here's how to play:</p>
+            <h2>Jetpack Jerry Rules</h2>
+            <p>Welcome to Jetpack Jerry! Here's how to play:</p>
             <ul>
-              <li>Roll two dice and win based on the sum</li>
-              <li>Sum of 7: Win 2x your bet</li>
-              <li>Sum of 11: Win 3x your bet</li>
-              <li>Double numbers: Win 5x your bet</li>
-              <li>Any other sum: Lose your bet</li>
+              <li>Press SPACE or tap the screen to activate your jetpack</li>
+              <li>Collect coins to earn MON rewards (0.01-0.1 MON per coin)</li>
+              <li>Travel distance also earns you MON coins</li>
+              <li>Land on platforms to rest</li>
+              <li>Avoid spikes or hitting the ground too hard</li>
+              <li>Game ends after 3 minutes or if you crash</li>
             </ul>
-            <Button onClick={() => setShowRules(false)}>Start Game</Button>
+            <Button onClick={startGame}>Start Game</Button>
           </ModalContent>
         </RulesModal>
       )}
-      
       {!showGameSelection && !showRules && selectedGame === 'snake' && (
         <>
           <ScorePanel>
@@ -813,23 +832,21 @@ const SinglePlayerGame: React.FC<{
         </>
       )}
       
-      {!showGameSelection && !showRules && selectedGame === 'dice' && (
-        <GameContainer>
-          <ScorePanel>
-            <div>MON: {gameState.monCoinsEarned.toFixed(4)}</div>
-          </ScorePanel>
-          {/* Dice game UI will be implemented here */}
-          <div style={{ color: 'white', textAlign: 'center', marginTop: '2rem' }}>
-            Dice Game Coming Soon!
-          </div>
-        </GameContainer>
+      {!showGameSelection && !showRules && selectedGame === 'jetpack' && (
+        <>
+          <JetpackGame 
+            socket={socket}
+            ethereumAddress={ethereumAddress}
+            onGameOver={() => setGameState(prev => ({ ...prev, gameStatus: 'finished' }))}
+          />
+        </>
       )}
-
       {gameState.gameStatus === 'finished' && (
         <GameOverModal>
           <ModalContent>
             <h2>Game Over!</h2>
-            <p>MON Earned: {gameState.monCoinsEarned.toFixed(4)}</p>
+            {selectedGame === 'snake' && <p>MON Earned: {gameState.monCoinsEarned.toFixed(4)}</p> }
+            
             <Button onClick={onBackToHome}>Back to Home</Button>
           </ModalContent>
         </GameOverModal>

@@ -418,7 +418,7 @@ const SettingsIcon = styled.img`
 const Label = styled.label`
   display: block;
   margin-bottom: 0.8rem;
-  color: #61dafb;
+  color:rgb(253, 255, 255);
   font-size: 1.1rem;
   font-weight: 500;
 `;

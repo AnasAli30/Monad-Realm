@@ -80,9 +80,50 @@ interface SinglePlayerGameState {
   ethereumAddress?: string;
 }
 
+interface Obstacle {
+  position: Position;
+  width: number;
+  height: number;
+  type: 'platform' | 'spike' | 'coin';
+}
+
+interface JetpackGameState {
+  player: {
+    position: Position;
+    velocity: Position;
+    isJetpackActive: boolean;
+  };
+  obstacles: Obstacle[];
+  gameStatus: 'waiting' | 'inProgress' | 'finished';
+  score: number;
+  distance: number;
+  monCoinsEarned: number;
+  startTime: number | null;
+  endTime: number | null;
+  ethereumAddress?: string;
+}
 const GRID_SIZE = 30;
 const GAME_DURATION = 180000; // 3 minutes in milliseconds
 const MIN_PLAYERS = 2;
+
+// Jetpack game settings
+const JETPACK_SETTINGS = {
+  CANVAS_WIDTH: 800,
+  CANVAS_HEIGHT: 600,
+  GRAVITY: 0.5,
+  THRUST: -0.8,
+  MAX_VELOCITY: 10,
+  TERMINAL_VELOCITY: 15,
+  OBSTACLE_SPEED: 5,
+  COIN_VALUE: 1,
+  MIN_OBSTACLE_SPACING: 200,
+  MAX_OBSTACLE_SPACING: 400
+};
+
+// Jetpack game helper functions
+function generateRoomId(): string {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
 
 function generateFood(gridSize: number): Position {
   return {
@@ -91,12 +132,9 @@ function generateFood(gridSize: number): Position {
   };
 }
 
-function generateRoomId(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+function checkCollision(pos1: Position, pos2: Position): boolean {
+  return pos1.x === pos2.x && pos1.y === pos2.y;
 }
-
-const rooms = new Map<string, Room>();
-const singlePlayerGames = new Map<string, SinglePlayerGameState>();
 
 function createRoom(betAmount: number, roomId: string, isPrivate: boolean, creator: string): Room {
   return {
@@ -108,7 +146,7 @@ function createRoom(betAmount: number, roomId: string, isPrivate: boolean, creat
     startTime: null,
     endTime: null,
     potAmount: 0,
-    minPlayers: 2,
+    minPlayers: MIN_PLAYERS,
     betAmount: betAmount,
     isPrivate: isPrivate,
     creator: creator,
@@ -117,110 +155,220 @@ function createRoom(betAmount: number, roomId: string, isPrivate: boolean, creat
   };
 }
 
-function checkCollision(pos1: Position, pos2: Position): boolean {
-  return pos1.x === pos2.x && pos1.y === pos2.y;
+const rooms = new Map<string, Room>();
+const singlePlayerGames = new Map<string, SinglePlayerGameState>();
+const jetpackGames = new Map<string, JetpackGameState>();
+const gameLoops = new Map<string, NodeJS.Timeout>();
+
+function createJetpackGameState(ethereumAddress?: string): JetpackGameState {
+  return {
+    player: {
+      position: { x: 100, y: JETPACK_SETTINGS.CANVAS_HEIGHT / 2 },
+      velocity: { x: 0, y: 0 },
+      isJetpackActive: false
+    },
+    obstacles: generateInitialObstacles(),
+    gameStatus: 'waiting',
+    score: 0,
+    distance: 0,
+    monCoinsEarned: 0,
+    startTime: null,
+    endTime: null,
+    ethereumAddress
+  };
 }
 
-function startGame(room: Room) {
-  if (room.gameStatus !== 'starting') return;
-  
-  room.gameStatus = 'inProgress';
-  room.startTime = Date.now();
-  room.endTime = room.startTime + GAME_DURATION;
-  
-  // Broadcast game started event with initial state
-  io.to(room.id).emit('gameStarted', {
-    startTime: room.startTime,
-    endTime: room.endTime
-  });
+function generateInitialObstacles(): Obstacle[] {
+  const obstacles: Obstacle[] = []; // Define obstacles array
+  let currentX = JETPACK_SETTINGS.CANVAS_WIDTH; // Start obstacles off-screen
 
-  // Broadcast updated game state
-  io.to(room.id).emit('gameState', {
-    players: Array.from(room.players.values()),
-    food: room.food,
-    gridSize: room.gridSize,
-    gameStatus: room.gameStatus,
-    startTime: room.startTime,
-    endTime: room.endTime,
-    potAmount: room.potAmount
-  });
-
-  // Set timeout to end game
-  setTimeout(() => endGame(room), GAME_DURATION);
-}
-
-async function endGame(room: Room) {
-  room.gameStatus = 'finished';
-  
-  // Find winner(s)
-  let highestScore = 0;
-  let winners: Player[] = [];
-  
-  room.players.forEach(player => {
-    if (player.score > highestScore) {
-      highestScore = player.score;
-      winners = [player];
-    } else if (player.score === highestScore) {
-      winners.push(player);
-    }
-  });
-
-  // Calculate prize per winner
-  const prizePerWinner = room.potAmount / winners.length;
-
-  try {
-    // End game on blockchain for each winner
-    for (const winner of winners) {
-      // Check if winner has an Ethereum address
-      if (!winner.ethereumAddress) {
-        console.warn(`Winner ${winner.id} has no Ethereum address, skipping blockchain transaction`);
-        continue;
-      }
-
-      await endGameOnBlockchain(
-        room.id,
-        winner.ethereumAddress,
-        (status) => {
-          console.log(`Blockchain transaction status for winner ${winner.id}: ${status}`);
-        }
-      );
-    }
-
-    // Emit game results
-    io.to(room.id).emit('gameEnded', {
-      winners: winners.map(w => ({
-        id: w.id,
-        score: w.score,
-        prize: prizePerWinner
-      }))
+  for (let i = 0; i < 5; i++) {
+    const type = Math.random() < 0.7 ? 'platform' : Math.random() < 0.5 ? 'spike' : 'coin';
+    
+    obstacles.push({
+      position: {
+        x: currentX,
+        y: type === 'coin' 
+          ? Math.random() * (JETPACK_SETTINGS.CANVAS_HEIGHT - 100) + 50 
+          : Math.random() * (JETPACK_SETTINGS.CANVAS_HEIGHT - 150) + 100
+      },
+      width: type === 'platform' ? 100 + Math.random() * 100 : type === 'spike' ? 30 : 20,
+      height: type === 'platform' ? 20 : type === 'spike' ? 30 : 20,
+      type
     });
 
-    console.log(`Game ${room.id} ended successfully. Winners:`, winners.map(w => w.id));
-  } catch (error) {
-    console.error('Error ending game on blockchain:', error);
-    // Still emit game results even if blockchain transaction fails
-    io.to(room.id).emit('gameEnded', {
-      winners: winners.map(w => ({
-        id: w.id,
-        score: w.score,
-        prize: prizePerWinner
-      })),
-      blockchainError: 'Failed to process winnings on blockchain'
-    });
+    currentX += JETPACK_SETTINGS.MIN_OBSTACLE_SPACING + 
+                Math.random() * (JETPACK_SETTINGS.MAX_OBSTACLE_SPACING - JETPACK_SETTINGS.MIN_OBSTACLE_SPACING);
   }
 
-  // Clean up room after a delay
-  setTimeout(() => {
-    rooms.delete(room.id);
-  }, 10000);
+  return obstacles;
 }
 
 // Function to generate random MON coin reward
 function generateMonCoinReward(): number {
   return Number((Math.random() * 0.09 + 0.01).toFixed(4)); // Random number between 0.01 and 0.1
 }
+function updateJetpackGameState(gameState: JetpackGameState, socket: any): void {
+  if (gameState.gameStatus !== 'inProgress') return;
 
-// Function to update player balance in smart contract for single player mode
+  // Update player physics
+  const player = gameState.player;
+
+  // Apply jetpack thrust or gravity
+  if (player.isJetpackActive) {
+    player.velocity.y = Math.max(
+      player.velocity.y + JETPACK_SETTINGS.THRUST,
+      -JETPACK_SETTINGS.MAX_VELOCITY
+    );
+  } else {
+    player.velocity.y = Math.min(
+      player.velocity.y + JETPACK_SETTINGS.GRAVITY,
+      JETPACK_SETTINGS.TERMINAL_VELOCITY
+    );
+  }
+
+  // Store previous Y position for platform collision
+  const previousY = player.position.y;
+  
+  // Update player position
+  player.position.y += player.velocity.y;
+
+  // Keep player in bounds
+  player.position.y = Math.max(0, Math.min(player.position.y, JETPACK_SETTINGS.CANVAS_HEIGHT - 60));
+
+  // Check for platform collisions
+  for (const obstacle of gameState.obstacles) {
+    if (obstacle.type === 'platform' && checkJetpackCollision(player.position, obstacle)) {
+      // Only land on platform when moving downward
+      if (player.velocity.y > 0 && previousY + 60 <= obstacle.position.y) {
+        player.position.y = obstacle.position.y - 60; // Place player on top of platform
+        player.velocity.y = 0; // Stop vertical movement
+        break;
+      }
+    }
+  }
+  // Update obstacles and check collisions
+  updateObstacles(gameState, socket);
+
+  // Update distance (score)
+  gameState.distance += JETPACK_SETTINGS.OBSTACLE_SPEED;
+  gameState.score = Math.floor(gameState.distance / 100);
+  
+  // Add distance-based scoring (every 500 units of distance)
+  if (Math.floor(gameState.distance / 500) > Math.floor((gameState.distance - JETPACK_SETTINGS.OBSTACLE_SPEED) / 500)) {
+    const monReward = generateMonCoinReward();
+    gameState.monCoinsEarned += monReward;
+    console.log('Distance milestone - MON coins earned:', monReward, 'Total:', gameState.monCoinsEarned);
+    
+    // If player has an Ethereum address, reward them for distance milestone
+    if (gameState.ethereumAddress) {
+      rewardSinglePlayer(gameState.ethereumAddress, monReward, socket)
+        .catch((error: unknown) => {
+          console.error('Failed to reward jetpack player for distance:', error);
+        });
+    }
+  }
+  
+  // Check if game duration has elapsed
+  if (Date.now() >= gameState.endTime!) {
+    gameState.gameStatus = 'finished';
+  }
+
+  // Check for game over if player hits the ground too hard
+  if (player.position.y >= JETPACK_SETTINGS.CANVAS_HEIGHT - 60 && player.velocity.y > 10) {
+    gameState.gameStatus = 'finished';
+    gameState.endTime = Date.now();
+  }
+}
+
+function updateObstacles(gameState: JetpackGameState, socket: any): void {
+  const updatedObstacles: Obstacle[] = [];
+  let coinCollected = false;
+
+  // Process existing obstacles
+  for (const obstacle of gameState.obstacles) {
+    // Move obstacle left
+    obstacle.position.x -= JETPACK_SETTINGS.OBSTACLE_SPEED;
+
+    // Check for collision with player
+    if (checkJetpackCollision(gameState.player.position, obstacle)) {
+      if (obstacle.type === 'coin' && !coinCollected) {
+        // Collect coin and reward player
+        coinCollected = true;
+        gameState.score += 10;
+        const monReward = generateMonCoinReward();
+        gameState.monCoinsEarned += monReward;
+        
+        // Reward player if they have an Ethereum address
+        if (gameState.ethereumAddress) {
+          rewardSinglePlayer(gameState.ethereumAddress, monReward, socket)
+            .catch((error: unknown) => {
+              console.error('Failed to reward player for coin:', error);
+            });
+        }
+        continue; // Remove coin by not adding it to updatedObstacles
+      } else if (obstacle.type === 'spike') {
+        // Game over on spike collision
+        gameState.gameStatus = 'finished';
+        gameState.endTime = Date.now();
+        return;
+      }
+      // Platforms don't cause collisions
+    }
+
+    // Keep obstacle if still on screen
+    if (obstacle.position.x > -100) {
+      updatedObstacles.push(obstacle);
+    }
+  }
+
+  // Generate new obstacles if needed
+  while (updatedObstacles.length < 5) {
+    const lastObstacle = updatedObstacles[updatedObstacles.length - 1];
+    const startX = lastObstacle 
+      ? lastObstacle.position.x + JETPACK_SETTINGS.MIN_OBSTACLE_SPACING + 
+        Math.random() * (JETPACK_SETTINGS.MAX_OBSTACLE_SPACING - JETPACK_SETTINGS.MIN_OBSTACLE_SPACING)
+      : JETPACK_SETTINGS.CANVAS_WIDTH;
+
+    // Randomly select obstacle type
+    const type = Math.random() < 0.7 ? 'platform' : Math.random() < 0.5 ? 'spike' : 'coin';
+    
+    updatedObstacles.push({
+      position: {
+        x: startX,
+        y: type === 'coin' 
+          ? Math.random() * (JETPACK_SETTINGS.CANVAS_HEIGHT - 100) + 50
+          : Math.random() * (JETPACK_SETTINGS.CANVAS_HEIGHT - 150) + 100
+      },
+      width: type === 'platform' ? 100 + Math.random() * 100 : type === 'spike' ? 30 : 20,
+      height: type === 'platform' ? 20 : type === 'spike' ? 30 : 20,
+      type
+    });
+  }
+
+  gameState.obstacles = updatedObstacles;
+}
+
+function checkJetpackCollision(playerPos: Position, obstacle: Obstacle): boolean {
+  const playerSize = { width: 40, height: 60 }; // Jetpack player hitbox
+
+  // Calculate collision boundaries
+  const playerLeft = playerPos.x;
+  const playerRight = playerPos.x + playerSize.width;
+  const playerTop = playerPos.y;
+  const playerBottom = playerPos.y + playerSize.height;
+
+  const obstacleLeft = obstacle.position.x;
+  const obstacleRight = obstacle.position.x + obstacle.width;
+  const obstacleTop = obstacle.position.y;
+  const obstacleBottom = obstacle.position.y + obstacle.height;
+
+  // Check for overlap
+  return !(playerRight < obstacleLeft || 
+           playerLeft > obstacleRight || 
+           playerBottom < obstacleTop || 
+           playerTop > obstacleBottom);
+}
 async function rewardSinglePlayer(ethereumAddress: string, amount: number, socket: any): Promise<void> {
   try {
     // Generate a unique reward ID
@@ -249,13 +397,12 @@ async function rewardSinglePlayer(ethereumAddress: string, amount: number, socke
       amount,
       txHash,
       rewardId
-    });
+    }); // Add closing brace for emit
   } catch (error: unknown) {
     console.error('Error rewarding single player on blockchain:', error);
     throw error;
   }
 }
-
 // Update the single player game state when food is collected
 function updateSinglePlayerGameState(gameState: SinglePlayerGameState, socket: any): void {
   if (gameState.gameStatus !== 'inProgress') return;
@@ -300,6 +447,20 @@ function updateSinglePlayerGameState(gameState: SinglePlayerGameState, socket: a
   gameState.snake.pop();
 }
 
+// Function to clean up Jetpack game resources
+function cleanupJetpackGame(socketId: string): void {
+  const gameLoop = gameLoops.get(socketId);
+  if (gameLoop) {
+    clearInterval(gameLoop);
+    gameLoops.delete(socketId);
+  }
+  
+  const gameState = jetpackGames.get(socketId);
+  if (gameState) {
+    gameState.gameStatus = 'finished';
+    jetpackGames.delete(socketId);
+  }
+}
 // Add function to get public rooms
 function getPublicRooms(): any[] {
   const publicRooms = [];
@@ -316,6 +477,29 @@ function getPublicRooms(): any[] {
     }
   }
   return publicRooms;
+}
+
+function startGame(room: Room) {
+  room.gameStatus = 'inProgress';
+  room.startTime = Date.now();
+  room.endTime = Date.now() + GAME_DURATION;
+
+  io.to(room.id).emit('gameStarted', {
+    startTime: room.startTime,
+    endTime: room.endTime
+  });
+}
+
+function endGame(room: Room) {
+  room.gameStatus = 'finished';
+  room.endTime = Date.now();
+
+  // Find winner(s)
+  const winners = Array.from(room.players.values())
+    .filter(player => player.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  io.to(room.id).emit('gameEnded', { winners });
 }
 
 io.on('connection', (socket) => {
@@ -665,6 +849,69 @@ io.on('connection', (socket) => {
     socket.emit('singlePlayerState', gameState);
   });
 
+  // Jetpack Jerry game handlers
+  socket.on('startJetpackGame', ({ ethereumAddress }) => {
+    const gameState = createJetpackGameState(ethereumAddress);
+    gameState.gameStatus = 'inProgress';
+    gameState.startTime = Date.now();
+    gameState.endTime = Date.now() + GAME_DURATION;
+    
+    jetpackGames.set(socket.id, gameState);
+    socket.emit('jetpackGameState', gameState);
+
+    // Start game loop
+    const gameLoop = setInterval(() => {
+      const currentState = jetpackGames.get(socket.id);
+      if (currentState && currentState.gameStatus === 'inProgress') {
+        updateJetpackGameState(currentState, socket);
+        // Only send essential state updates
+        const stateUpdate = {
+          player: currentState.player,
+          obstacles: currentState.obstacles,
+          score: currentState.score,
+          distance: currentState.distance,
+          monCoinsEarned: currentState.monCoinsEarned,
+          gameStatus: currentState.gameStatus
+        };
+        socket.emit('jetpackGameState', stateUpdate);
+
+        if (currentState.gameStatus !== 'inProgress') {
+          clearInterval(gameLoop);
+          gameLoops.delete(socket.id);
+          jetpackGames.delete(socket.id);
+        }
+      } else {
+        clearInterval(gameLoop);
+        gameLoops.delete(socket.id);
+      }
+    }, 1000 / 30); // 30 FPS
+    
+    // Store the game loop reference for cleanup
+    gameLoops.set(socket.id, gameLoop);
+    // Ensure game loop is cleared after duration
+    setTimeout(() => {
+      const gameLoop = gameLoops.get(socket.id);
+      if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoops.delete(socket.id);
+      }
+      
+      const finalState = jetpackGames.get(socket.id);
+      if (finalState) {
+        finalState.gameStatus = 'finished';
+        socket.emit('jetpackGameState', finalState);
+        jetpackGames.delete(socket.id);
+      }
+    }, GAME_DURATION);
+  }); // Add missing closing brace for startJetpackGame handler
+
+  socket.on('jetpackControl', ({ active }) => {
+    const gameState = jetpackGames.get(socket.id);
+    if (!gameState || gameState.gameStatus !== 'inProgress') return;
+
+    gameState.player.isJetpackActive = active;
+  });
+
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     
@@ -699,7 +946,11 @@ io.on('connection', (socket) => {
         break;
       }
     }
+    
+    // Clean up single player games
     singlePlayerGames.delete(socket.id);
+    // Clean up Jetpack games
+    cleanupJetpackGame(socket.id);
   });
 });
 
@@ -783,4 +1034,4 @@ app.post('/api/verify-fuse', async (req, res) => {
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

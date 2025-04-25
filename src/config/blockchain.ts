@@ -1,10 +1,18 @@
 import { ethers } from 'ethers';
 
+declare global {
+  interface Window {
+    readonly ethereum: {
+      request: (args: { method: string; params?: any[] }) => Promise<any>;
+    }
+  }
+}
+
 // Monad testnet configuration
 export const MONAD_TESTNET = {
   chainId: '0x279F', // Replace with actual Monad testnet chain ID
   chainName: 'Monad Testnet',
-  rpcUrls: ['monad-api.blockvision.org/testnet/api'], // Replace with actual Monad testnet RPC URL
+  rpcUrls: ['https://monad-api.blockvision.org/testnet/api'], // Replace with actual Monad testnet RPC URL
   nativeCurrency: {
     name: 'MON',
     symbol: 'MON',

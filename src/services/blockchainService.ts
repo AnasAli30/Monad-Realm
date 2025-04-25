@@ -6,6 +6,8 @@ import {
   requestAccount, 
   switchToMonadTestnet 
 } from '../config/blockchain';
+import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
+
 
 // Transaction status types
 export type TransactionStatus = 'idle' | 'pending' | 'confirmed' | 'failed';

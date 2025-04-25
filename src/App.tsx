@@ -9,6 +9,31 @@ import GameWallet from './components/GameWallet';
 import SinglePlayerGame from './components/SinglePlayerGame';
 import { GlobalStyles } from './styles/GlobalStyles';
 
+
+import { createAppKit } from '@reown/appkit/react'
+import { Ethers5Adapter } from '@reown/appkit-adapter-ethers5'
+import { monadTestnet } from '@reown/appkit/networks'
+
+
+const networks: [typeof monadTestnet, ...typeof monadTestnet[]] = [monadTestnet];
+
+const metadata = {
+  name: 'Monad Verse',
+  description: '',
+  url: 'https://reown.com/appkit', // origin must match your domain & subdomain
+  icons: ['https://assets.reown.com/reown-profile-pic.png']
+}
+
+createAppKit({
+  adapters: [new Ethers5Adapter()],
+  networks,
+  metadata,
+  projectId: process.env.REACT_APP_APPKIT_PROJECT_ID || '', // Replace with your actual project ID
+  features: {
+    analytics: false
+  }
+});
+
 interface Position {
   x: number;
   y: number;

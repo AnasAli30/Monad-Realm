@@ -946,20 +946,7 @@ const GameScene: React.FC<Snake3DProps> = ({
       <Food position={food} />
       
       {/* Score display */}
-      <Text
-        position={[gridSize / 2, 5, gridSize / 2]}
-        color="white"
-        fontSize={1.5}
-        anchorX="center"
-        anchorY="middle"
-        castShadow
-        fillOpacity={1}
-        outlineWidth={0.05}
-        outlineColor="#000000"
-      >
-        {`Total MON: ${formattedMON}`}
-      </Text>
-      
+   
       {gameStatus === 'finished' && (
         <>
           <Text
