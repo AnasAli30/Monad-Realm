@@ -1684,7 +1684,7 @@ const GameBoard = ({
             $isTrail={cellType !== 'empty' && cellType !== 'food' && !isHead}
             $isWinner={isWinner}
             $isLoser={isLoser}
-            $is3D={is3DView}
+            $is3D={!is3DView}
           />
         );
       }
@@ -2025,23 +2025,7 @@ const GameBoard = ({
         </WinnerCalculationOverlay>
       )}
 
-      {/* 3D View Controls */}
-      <ViewControls>
-        <ViewButton
-          onClick={() => setIs3DView(!is3DView)}
-          className={is3DView ? 'active' : ''}
-        >
-          {is3DView ? '2D View' : '3D View'}
-        </ViewButton>
-        {is3DView && (
-          <ViewButton
-            onClick={() => setAutoRotate(!autoRotate)}
-            className={autoRotate ? 'active' : ''}
-          >
-            {autoRotate ? 'Stop Rotation' : 'Auto Rotate'}
-          </ViewButton>
-        )}
-      </ViewControls>
+     
     </>
   );
 };

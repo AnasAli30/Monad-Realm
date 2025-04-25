@@ -8,6 +8,11 @@ import Snake3D from './Snake3D';
 const GAME_DURATION = 180000; // 3 minutes in milliseconds
 const GRID_SIZE = 30;
 
+interface Position {
+  x: number;
+  y: number;
+}
+
 interface GameState {
   snake: Position[];
   food: Position;
@@ -73,10 +78,11 @@ const gridShimmer = keyframes`
   100% { box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4), inset 0 0 5px rgba(97, 218, 251, 0.1); }
 `;
 
-const Container = styled.div`
+const Container = styled.div<{ showGameSelection: boolean; showRules: boolean; selectedGame: string }>`
   width: 100vw;
   height: 100vh;
-
+  background: ${props => (!props.showGameSelection && !props.showRules && props.selectedGame === 'snake') ? 'black' : `url('/images/pvp-background.jpeg') no-repeat center center fixed`};
+  background-size: cover;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -88,8 +94,6 @@ const Container = styled.div`
   perspective: 1000px;
   overflow: hidden;
   
-  
-  
   &::after {
     content: '';
     position: absolute;
@@ -97,7 +101,9 @@ const Container = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at center, rgba(97, 218, 251, 0.05) 0%, transparent 70%);
+    background: ${props => (!props.showGameSelection && !props.showRules && props.selectedGame === 'snake') ? 
+      'radial-gradient(circle at center, rgba(97, 218, 251, 0.05) 0%, transparent 70%)' : 
+      'linear-gradient(135deg, rgba(38, 38, 38, 0.15) 0%, rgba(42, 42, 42, 0.48) 100%)'};
     z-index: 0;
     pointer-events: none;
   }
@@ -140,8 +146,8 @@ interface CellProps {
   $isHead?: boolean;
   $direction?: string;
   $segmentType?: 'head' | 'body' | 'tail';
-  $prevSegment?: Position;
-  $nextSegment?: Position;
+  $prevSegment?: Position | null;
+  $nextSegment?: Position | null;
 }
 
 const Cell = styled.div<CellProps>`
@@ -332,7 +338,6 @@ const ModalContent = styled.div`
   text-align: center;
   border: 2px solid var(--color-secondary);
   box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
-  animation: ${gameOverScale} 0.5s ease-out;
   backdrop-filter: blur(5px);
   width: 80%;
   max-width: 500px;
@@ -658,8 +663,8 @@ const SinglePlayerGame: React.FC<{
         const isFood = gameState.food.x === x && gameState.food.y === y;
         const isHead = snakeIndex === 0;
         
-        let prevSegment = undefined;
-        let nextSegment = undefined;
+        let prevSegment: Position | null = null;
+        let nextSegment: Position | null = null;
         let segmentType: 'head' | 'body' | 'tail' | undefined = undefined;
         
         if (isSnake) {
@@ -710,12 +715,16 @@ const SinglePlayerGame: React.FC<{
   };
 
   return (
-    <Container>
+    <Container 
+      showGameSelection={showGameSelection} 
+      showRules={showRules} 
+      selectedGame={selectedGame}
+    >
       <ToastContainer />
       {showGameSelection && (
         <GameSelectionModal>
           <GameSelectionContent>
-            <h2>Choose a Game</h2>
+            <h2>Select a Game</h2>
             <GameButton onClick={() => {
               setSelectedGame('snake');
               setShowGameSelection(false);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { createRoomOnBlockchain, joinRoomOnBlockchain, TransactionStatus, getConnectedAccount } from '../services/blockchainService';
+import { createRoomOnBlockchain, joinRoomOnBlockchain, TransactionStatus, getConnectedAccount, getRoomInfoFromBlockchain } from '../services/blockchainService';
 import GameWallet from './GameWallet';
 import { AudioManager } from '../utils/AudioManager';
 import { SoundOnIcon } from '../assets/icons/sound-on';
@@ -47,7 +47,7 @@ const spin = keyframes`
   }
 `;
 
-const Container = styled.div`
+const Container = styled.div<{ isGameScreen: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -493,16 +493,43 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const handleCreateRoom = async () => {
       setIsLoading(true);
       setTransactionStatus('pending');
+      setError(null);
     try {
+      // Generate room ID first
       const roomId = Math.random().toString(36).substring(2, 8);
-      const result = await createRoomOnBlockchain(
+      
+      // Create room on blockchain first
+      await createRoomOnBlockchain(
         roomId,
         parseFloat(betAmount),
         (status) => setTransactionStatus(status)
       );
-      setCreatedRoomId(roomId);
-      setTransactionStatus('confirmed');
+      
+      // After blockchain confirmation, create room on socket.io server
+      if (socket) {
+        socket.emit('createRoom', { 
+          roomId,
+          betAmount: parseFloat(betAmount),
+          ethereumAddress 
+        });
+
+        // Listen for room creation confirmation
+        socket.once('roomCreated', (data) => {
+          if (data.roomId === roomId) {
+            setCreatedRoomId(roomId);
+            setShowRoomCreated(true);
+            setShowCreateRoom(false);
+            setTransactionStatus('confirmed');
+          }
+        });
+
+        // Listen for errors
+        socket.once('error', (error) => {
+          throw new Error(error.message);
+        });
+      }
     } catch (err) {
+      console.error('Error creating room:', err);
       setError(err instanceof Error ? err.message : 'Failed to create room');
       setTransactionStatus('failed');
     } finally {
@@ -513,11 +540,41 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const handleJoinRoom = async () => {
     setIsLoading(true);
     setTransactionStatus('pending');
+    setError(null);
     try {
+      // First verify the room exists and get its info
+      const roomInfo = await getRoomInfoFromBlockchain(roomId);
+      
+      if (!roomInfo.isActive) {
+        throw new Error('Room does not exist or is no longer active');
+      }
+
+      // Join room on blockchain
       await joinRoomOnBlockchain(roomId, parseFloat(betAmount));
-      setTransactionStatus('confirmed');
-      onJoinRoom(roomId);
+      
+      // After blockchain confirmation, join room on socket.io server
+      if (socket) {
+        socket.emit('joinRoom', { 
+          roomId, 
+          ethereumAddress,
+          betAmount: parseFloat(betAmount)
+        });
+
+        // Listen for room join confirmation
+        socket.once('roomJoined', (data) => {
+          if (data.roomId === roomId) {
+            setTransactionStatus('confirmed');
+            onJoinRoom(roomId);
+          }
+        });
+
+        // Listen for errors
+        socket.once('error', (error) => {
+          throw new Error(error.message);
+        });
+      }
     } catch (err) {
+      console.error('Error joining room:', err);
       setError(err instanceof Error ? err.message : 'Failed to join room');
       setTransactionStatus('failed');
     } finally {
@@ -597,7 +654,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           </SettingsButton>
         </NavRight>
       </NavBar>
-      <Container>
+      <Container isGameScreen={showPvPMode}>
         {showSettings && <Settings onClose={handleCloseSettings} />}
         <SoundToggle onClick={handleSoundToggle}>
           {isMuted ? <SoundOffIcon /> : <SoundOnIcon />}

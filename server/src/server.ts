@@ -94,9 +94,8 @@ function generateRoomId(): string {
 const rooms = new Map<string, Room>();
 const singlePlayerGames = new Map<string, SinglePlayerGameState>();
 
-function createRoom(betAmount: number): Room {
-  const roomId = generateRoomId();
-  const room: Room = {
+function createRoom(betAmount: number, roomId: string): Room {
+  return {
     id: roomId,
     players: new Map(),
     food: generateFood(GRID_SIZE),
@@ -105,11 +104,9 @@ function createRoom(betAmount: number): Room {
     startTime: null,
     endTime: null,
     potAmount: 0,
-    minPlayers: MIN_PLAYERS,
-    betAmount
+    minPlayers: 2,
+    betAmount: betAmount
   };
-  rooms.set(roomId, room);
-  return room;
 }
 
 function checkCollision(pos1: Position, pos2: Position): boolean {
@@ -298,9 +295,9 @@ function updateSinglePlayerGameState(gameState: SinglePlayerGameState, socket: a
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
 
-  socket.on('createRoom', ({ betAmount, ethereumAddress }) => {
-    const room = createRoom(betAmount);
-    socket.join(room.id);
+  socket.on('createRoom', ({ roomId, betAmount, ethereumAddress }) => {
+    const room = createRoom(betAmount, roomId);
+    socket.join(roomId);
     
     // Initialize host player
     const player: Player = {
@@ -321,6 +318,7 @@ io.on('connection', (socket) => {
       ethereumAddress: ethereumAddress
     };
 
+    rooms.set(roomId, room);
     room.players.set(socket.id, player);
 
     // Send room info to host
