@@ -16,14 +16,14 @@ const pulse = keyframes`
 
 const WalletContainer = styled.div`
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top:60px;
+  right: 20px;
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(30, 30, 30, 0.85) 100%);
   border-radius: 12px;
   padding: 12px;
   color: white;
   z-index: 1000;
-  width: 180px;
+  width: 190px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(97, 218, 251, 0.1);
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -80,13 +80,13 @@ const Balance = styled.div`
 
 const WithdrawButton = styled.button`
   background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
-  color: white;
+  color: black;
   border: none;
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
   width: 100%;
-  font-size: 0.9rem;
+  font-size: 0.7rem ;
   transition: all 0.3s ease;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   font-weight: 500;
@@ -309,7 +309,7 @@ const GameWallet: React.FC<GameWalletProps> = ({ playerAddress, isBlockchainConn
         onClick={handleWithdraw} 
         disabled={isLoading || parseFloat(balance) <= 0 || !isBlockchainConnected}
       >
-        {isLoading ? 'Processing...' : 'Withdraw Winnings'}
+        {isLoading ? 'Processing...' : 'Withdraw'}
       </WithdrawButton>
       
       {transactionStatus !== 'idle' && (

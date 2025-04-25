@@ -2,98 +2,88 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { createRoomOnBlockchain, joinRoomOnBlockchain, TransactionStatus, getConnectedAccount } from '../services/blockchainService';
 import GameWallet from './GameWallet';
+import { AudioManager } from '../utils/AudioManager';
+import { SoundOnIcon } from '../assets/icons/sound-on';
+import { SoundOffIcon } from '../assets/icons/sound-off';
+import { AudioTest } from './AudioTest';
+import Settings from './Settings';
+import { toast } from 'react-hot-toast';
+import { ethers } from 'ethers';
+import { encodeFuseKey } from '../utils/fuseEncoder';
+import CONTRACT_ABI from '../utils/contractAbi.json';
+import settingsIcon from '../assets/icons/settings-icon.svg';
+import NFTPassDisplay from './NFTPassDisplay';
+const CONTRACT_ADDRESS = '0x3543ab02430F5411775afd00310565305716b0e5';
 
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-
-const slideIn = keyframes`
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-`;
+interface HomeScreenProps {
+  socket: any;
+  onJoinRoom: (roomId: string) => void;
+  onPlaceBet: (amount: number) => void;
+  onBackToHome: () => void;
+  onStartSinglePlayer: () => void;
+  currentRoom: string | null;
+  isBlockchainConnected: boolean;
+  ethereumAddress: string | null;
+}
 
 const pulse = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 `;
 
 const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
-
-const slideDown = keyframes`
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
+  0% {
+    transform: rotate(0deg);
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+  100% {
+    transform: rotate(360deg);
   }
 `;
 
 const Container = styled.div`
-  width: 100vw;
-  height: 100vh;
-  background: var(--gradient-dark);
-  background: linear-gradient(to bottom, 
-    rgba(20, 30, 40, 0.95), 
-    rgba(10, 15, 25, 0.98)
-  ), var(--gradient-dark);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  margin: 0;
-  animation: ${fadeIn} 0.6s ease-out;
+  min-height: 100vh;
+  min-width: 100vw;
+  background: url('/images/pvp-background.jpeg') no-repeat center center fixed;
+  background-size: cover;
+  color: white;
+  padding: 0rem;
   position: relative;
   overflow: hidden;
-  
+
   &::before {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 50% 50%, rgba(97, 218, 251, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
-    z-index: 1;
-    pointer-events: none;
-  }
-  
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: 
-      linear-gradient(
-        rgba(255, 255, 255, 0.03) 1px, 
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg, 
-        rgba(255, 255, 255, 0.03) 1px, 
-        transparent 1px
-      );
-    background-size: 20px 20px;
-    pointer-events: none;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+      rgba(38, 38, 38, 0.15) 0%, 
+      rgba(42, 42, 42, 0.48) 100%
+    );
     z-index: 0;
   }
-  
-  @media (max-width: 768px) {
-    padding: 0;
-  }
-  
-  @media (max-height: 600px) {
-    justify-content: flex-start;
-    padding-top: 2vh;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    pointer-events: none;
   }
 `;
 
@@ -102,363 +92,48 @@ const NavBar = styled.nav`
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background: linear-gradient(to right, rgba(20, 30, 40, 0.95), rgba(10, 15, 25, 0.98));
-  backdrop-filter: blur(10px);
   display: flex;
-  align-items: center;
+  height: 20px;
   justify-content: space-between;
-  padding: 0 20px;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.44);
   z-index: 1000;
-  border-bottom: 1px solid rgba(97, 218, 251, 0.1);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(97, 218, 251, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 `;
 
-const Logo = styled.div`
-  font-size: 1.5rem;
-  color: #61dafb;
-  cursor: pointer;
+const NavRight = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: scale(1.05);
-  }
-  
-  &::before {
-    content: "🐍";
-    font-size: 1.8rem;
-  }
-`;
-
-const WalletContainer = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  margin-right: 20px;
-`;
-
-const WalletLogo = styled.div`
-  font-size: 1.5rem;
-  color: #61dafb;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.3s ease;
-  padding: 8px 15px;
-  border-radius: 8px;
-  background: rgba(97, 218, 251, 0.1);
-  
-  &:hover {
-    transform: scale(1.05);
-    background: rgba(97, 218, 251, 0.2);
-  }
-  
-  &::before {
-    content: "💰";
-    font-size: 1.8rem;
-  }
-`;
-
-const WalletWrapper = styled.div<{ isVisible: boolean }>`
-  position: absolute;
-  top: 100%;
-  right: -100px;
-  margin-top: 10px;
-  transform-origin: top right;
-  z-index: 1000;
-  opacity: ${props => props.isVisible ? 1 : 0};
-  transform: ${props => props.isVisible ? 'translateY(0)' : 'translateY(-100%)'};
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-  pointer-events: ${props => props.isVisible ? 'auto' : 'none'};
-  width: 300px;
-`;
-
-const Title = styled.h1`
-  color: var(--color-secondary);
-  margin-bottom: clamp(20px, 5vh, 40px);
-  font-size: clamp(2.5rem, 8vmin, 4rem);
-  text-align: center;
-  text-shadow: 0 0 15px rgba(97, 218, 251, 0.5);
-  font-weight: bold;
-  letter-spacing: 2px;
-  position: relative;
-  z-index: 2;
-  animation: ${slideIn} 0.8s ease-out;
-  
-  @media (max-width: 768px) {
-    margin-bottom: clamp(15px, 4vh, 30px);
-  }
-  
-  @media (max-height: 600px) {
-    margin-bottom: 15px;
-    font-size: clamp(2rem, 6vmin, 3rem);
-  }
-`;
-
-const Card = styled.div`
-  background: var(--gradient-dark);
-  padding: clamp(20px, 4vmin, 35px);
-  border-radius: var(--border-radius-lg);
-  width: min(450px, 85vw);
-  max-height: 90vh;
-  text-align: center;
-  box-shadow: var(--shadow-lg), 0 0 20px rgba(97, 218, 251, 0.15);
-  position: relative;
-  z-index: 2;
-  animation: ${slideIn} 0.5s ease-out;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(5px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow-y: auto;
-  
-  p {
-    color: var(--color-text);
-    margin-bottom: clamp(10px, 2vh, 15px);
-    font-size: clamp(0.9rem, 2.5vmin, 1.1rem);
-  }
-  
-  @media (max-width: 768px) {
-    padding: clamp(15px, 3vmin, 25px);
-  }
-  
-  @media (max-height: 600px) {
-    padding: 15px;
-  }
-`;
-
-const Button = styled.button`
-  background: var(--gradient-secondary);
-  color: black;
-  border: none;
-  padding: clamp(12px, 2vmin, 16px) clamp(20px, 4vmin, 30px);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  font-size: clamp(1rem, 2.5vmin, 1.2rem);
-  margin: clamp(8px, 1.5vh, 12px);
-  width: min(220px, 80%);
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  overflow: hidden;
-
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0.3),
-      rgba(255, 255, 255, 0)
-    );
-    transition: left 0.7s ease;
-  }
-  
-  &:hover {
-    background: var(--color-secondary-hover);
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-  }
-  
-  &:hover:before {
-    left: 100%;
-  }
-  
-  &:active {
-    transform: translateY(1px);
-    box-shadow: var(--shadow-sm);
-  }
-  
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    background: #7a7a7a;
-    transform: none;
-    box-shadow: none;
-  }
-  
-  @media (max-width: 768px) {
-    width: min(100%, 300px);
-    padding: clamp(10px, 2vmin, 14px) clamp(15px, 3vmin, 25px);
-    font-size: clamp(0.9rem, 2.2vmin, 1.1rem);
-    margin: clamp(6px, 1vh, 10px);
-  }
-  
-  @media (max-height: 600px) {
-    padding: 10px 18px;
-    font-size: 0.9rem;
-    margin: 5px;
-  }
-`;
-
-const Input = styled.input`
-  padding: clamp(12px, 2vmin, 16px);
-  border-radius: var(--border-radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin: clamp(8px, 1.5vh, 12px) 0;
-  width: 100%;
-  font-size: clamp(0.9rem, 2.2vmin, 1.1rem);
-  background-color: rgba(0, 0, 0, 0.3);
-  color: var(--color-text);
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-  outline: none;
-  height: clamp(45px, 8vh, 60px);
-  
-  &:focus {
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.3);
-  }
-  
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-  
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-  }
-`;
-
-const Tooltip = styled.div`
-  position: absolute;
-  bottom: 110%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 8px 12px;
-  border-radius: var(--border-radius-sm);
-  font-size: 0.85rem;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 10;
-  box-shadow: var(--shadow-md);
-  width: max-content;
-  max-width: 220px;
-  
-  &::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
-  }
-`;
-
-const InputContainer = styled.div`
-  position: relative;
-  width: 100%;
-  margin-bottom: 15px;
-  
-  &:hover ${Tooltip} {
-    opacity: 1;
-  }
-`;
-
-const Label = styled.label`
-  color: var(--color-text);
-  display: block;
-  margin-bottom: clamp(5px, 1vh, 10px);
-  text-align: left;
-  font-weight: 500;
-  font-size: clamp(0.9rem, 2.2vmin, 1.05rem);
+  gap: 1rem;
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-top: clamp(15px, 3vh, 25px);
+  gap: 1.5rem;
   width: 100%;
-  gap: clamp(8px, 1.5vh, 12px);
-  
-  @media (min-width: 480px) {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
+  max-width: 300px;
+  margin-top: 2rem;
 `;
 
-const RoomInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 2rem;
-  text-align: center;
-`;
-
-const SuccessIcon = styled.div`
-  font-size: 3rem;
-  color: #4CAF50;
-  margin-bottom: 1rem;
-`;
-
-const SuccessMessage = styled.div`
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #4CAF50;
-`;
-
-const RoomId = styled.div`
-  font-size: clamp(1.4rem, 4vmin, 1.7rem);
-  font-weight: bold;
-  color: var(--color-secondary);
-  margin: clamp(10px, 2vh, 15px) 0;
-  padding: clamp(12px, 2.5vmin, 18px);
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(30, 30, 30, 0.5) 100%);
-  border-radius: var(--border-radius-md);
-  display: inline-block;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(97, 218, 251, 0.2);
-  border: 1px solid rgba(97, 218, 251, 0.3);
-  text-shadow: 0 0 10px rgba(97, 218, 251, 0.7);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(97, 218, 251, 0.3);
-    border-color: rgba(97, 218, 251, 0.5);
-  }
-`;
-
-const ShareText = styled.div`
-  color: #666;
-  margin-top: 0.5rem;
-`;
-
-const CopyButton = styled.button`
-  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-hover) 100%);
+const Button = styled.button`
+  padding: 1rem 1.5rem;
+  background: linear-gradient(45deg, #61dafb, #2196f3);
   color: white;
   border: none;
-  padding: clamp(10px, 2vmin, 15px) clamp(20px, 4vmin, 30px);
-  border-radius: var(--border-radius-md);
+  border-radius: 8px;
   cursor: pointer;
-  margin-top: clamp(10px, 2vh, 15px);
+  font-size: 1.1rem;
   font-weight: 600;
-  font-size: clamp(0.9rem, 2.2vmin, 1.1rem);
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   position: relative;
   overflow: hidden;
-  
-  &:before {
+  box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);
+
+  &::before {
     content: '';
     position: absolute;
     top: 0;
@@ -468,35 +143,121 @@ const CopyButton = styled.button`
     background: linear-gradient(
       90deg,
       rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.2),
       rgba(255, 255, 255, 0)
     );
     transition: left 0.7s ease;
   }
-  
+
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
   }
-  
-  &:hover:before {
+
+  &:hover::before {
     left: 100%;
   }
-  
+
   &:active {
     transform: translateY(1px);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  &:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 `;
 
-const TransactionStatusIndicator = styled.div<{ status: TransactionStatus }>`
-  margin-top: clamp(10px, 2vh, 15px);
-  padding: clamp(8px, 1.5vmin, 12px);
-  border-radius: var(--border-radius-sm);
+const Title = styled.h1`
+  font-size: 2rem !important;
+  margin: 0;
+  background: linear-gradient(45deg, #61dafb, #2196f3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
+  animation: ${pulse} 2s infinite ease-in-out;
+`;
+
+const Card = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2.5rem;
+  border-radius: 16px;
+  width: 550px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 600px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+`;
+
+
+const RoomInfo = styled.div`
+  margin-bottom: 2rem;
+`;
+
+const SuccessMessage = styled.h2`
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+`;
+
+const RoomId = styled.p`
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+`;
+
+const ShareText = styled.p`
+  margin-bottom: 1rem;
+`;
+
+const CopyButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #357abd;
+  }
+`;
+
+const TransactionStatusIndicator = styled.p<{ status: TransactionStatus }>`
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
   text-align: center;
-  font-weight: bold;
-  background-color: ${props => {
-    switch (props.status) {
+  font-weight: 500;
+  animation: ${pulse} 2s infinite ease-in-out;
+  background: ${({ status }) => {
+    switch (status) {
+      case 'pending':
+        return 'rgba(255, 215, 0, 0.1)';
+      case 'confirmed':
+        return 'rgba(76, 175, 80, 0.1)';
+      case 'failed':
+        return 'rgba(244, 67, 54, 0.1)';
+      default:
+        return 'transparent';
+    }
+  }};
+  border: 1px solid ${({ status }) => {
+    switch (status) {
       case 'pending':
         return '#ffd700';
       case 'confirmed':
@@ -507,68 +268,174 @@ const TransactionStatusIndicator = styled.div<{ status: TransactionStatus }>`
         return 'transparent';
     }
   }};
-  color: ${props => props.status === 'pending' ? 'black' : 'white'};
+  color: ${({ status }) => {
+    switch (status) {
+      case 'pending':
+        return '#ffd700';
+      case 'confirmed':
+        return '#4caf50';
+      case 'failed':
+        return '#f44336';
+      default:
+        return 'white';
+    }
+  }};
 `;
 
 const LoadingOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 3000;
+  z-index: 1000;
   backdrop-filter: blur(5px);
-  animation: ${fadeIn} 0.3s ease-out;
 `;
 
 const LoadingContent = styled.div`
   background: rgba(255, 255, 255, 0.1);
   padding: 2rem;
-  border-radius: var(--border-radius-lg);
+  border-radius: 12px;
   text-align: center;
-  color: white;
-  max-width: 400px;
-  width: 90%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  
-  h3 {
-    margin-bottom: 20px;
-    color: var(--color-warning);
-    font-size: 24px;
-  }
-  
-  p {
-    margin: 15px 0;
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.8);
-  }
+  border: 1px solid rgba(97, 218, 251, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 `;
 
 const LoadingSpinner = styled.div`
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-left-color: var(--color-warning);
+  border: 4px solid rgba(97, 218, 251, 0.1);
+  border-top: 4px solid #61dafb;
   border-radius: 50%;
-  margin: 20px auto;
+  width: 50px;
+  height: 50px;
   animation: ${spin} 1s linear infinite;
+  margin: 0 auto 1rem;
 `;
 
-interface HomeScreenProps {
-  socket: any;
-  onJoinRoom: (roomId: string, isHost: boolean, betAmount: number) => void;
-  onPlaceBet: (roomId: string, betAmount: number) => void;
-  onBackToHome: () => void;
-  onStartSinglePlayer: () => void;
-  currentRoom: string | null;
-  isBlockchainConnected: boolean;
-  ethereumAddress: string | null;
-}
+const WalletLogo = styled.img`
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+`;
+
+const WalletWrapper = styled.div<{ $connected: boolean }>`
+  display: ${({ $connected }) => ($connected ? 'block' : 'none')};
+  margin-left: 1rem;
+`;
+
+const SoundToggle = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+const SettingsButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  
+  &:hover {
+    background: rgba(97, 218, 251, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const SettingsIcon = styled.img`
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1);
+`;
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 0.8rem;
+  color: #61dafb;
+  font-size: 1.1rem;
+  font-weight: 500;
+`;
+
+const Input = styled.input`
+  padding: 1rem;
+  border: 1px solid rgba(97, 218, 251, 0.3);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #61dafb;
+    box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.2);
+  }
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+`;
+
+const MintButton = styled.button`
+  padding: 0.5rem 1rem;
+  background: linear-gradient(45deg, #61dafb, #2196f3);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+  }
+
+  &:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+`;
+
+const ConnectWalletMessage = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color:rgb(255, 255, 255);
+  font-size: 1.2rem;
+  font-weight: 600;
+  width: 420px;
+  
+  p {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+`;
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ 
   socket, 
@@ -580,80 +447,63 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   isBlockchainConnected,
   ethereumAddress
 }) => {
+  const audioManager = AudioManager.getInstance();
+  const [showPvPMode, setShowPvPMode] = useState(false);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showJoinRoom, setShowJoinRoom] = useState(false);
-  const [showPvPMode, setShowPvPMode] = useState(false);
-  const [roomId, setRoomId] = useState('');
-  const [betAmount, setBetAmount] = useState('1');
-  const [createdRoomId, setCreatedRoomId] = useState<string>('');
-  const [confirmedRoomId, setConfirmedRoomId] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [transactionStatus, setTransactionStatus] = useState<TransactionStatus>('idle');
   const [showRoomCreated, setShowRoomCreated] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [roomId, setRoomId] = useState('');
+  const [createdRoomId, setCreatedRoomId] = useState('');
+  const [betAmount, setBetAmount] = useState('0.1');
+  const [isLoading, setIsLoading] = useState(false);
+  const [transactionStatus, setTransactionStatus] = useState<TransactionStatus>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const [isMinting, setIsMinting] = useState(false);
+  const [hasNFT, setHasNFT] = useState(false);
 
-  useEffect(() => {
-    if (socket) {
-      socket.on('roomCreated', (data: { roomId: string }) => {
-        console.log('Room created in HomeScreen:', data.roomId);
-        setCreatedRoomId(data.roomId);
-      });
+  const handleButtonClick = (callback: () => void) => {
+    audioManager.playClickSound();
+    callback();
+  };
+  
+  const handleOpenSettings = () => {
+    setShowSettings(true);
+  };
+  
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+  };
 
-      return () => {
-        socket.off('roomCreated');
-      };
-    }
-  }, [socket]);
+  const handleSoundToggle = () => {
+    audioManager.toggleMute();
+    setIsMuted(audioManager.isSoundMuted());
+  };
+
+  const handleCopyRoomId = () => {
+    navigator.clipboard.writeText(createdRoomId);
+  };
+
+  const handleJoinCreatedRoom = () => {
+    onJoinRoom(createdRoomId);
+  };
 
   const handleCreateRoom = async () => {
-    if (!socket) {
-      setError('Not connected to server');
-      return;
-    }
-
-    if (!betAmount || isNaN(parseFloat(betAmount)) || parseFloat(betAmount) <= 0) {
-      setError('Please enter a valid bet amount');
-      return;
-    }
-
-    try {
       setIsLoading(true);
-      setError('');
       setTransactionStatus('pending');
-
-      const ethereumAddress = await getConnectedAccount();
-      if (!ethereumAddress) {
-        throw new Error('No Ethereum address connected');
-      }
-
-      // Emit createRoom event and wait for roomCreated response
-      socket.emit('createRoom', { betAmount: parseFloat(betAmount), ethereumAddress });
-
-      // Wait for roomCreated event
-      const roomCreatedPromise = new Promise<string>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Room creation timed out'));
-        }, 30000);
-
-        socket.once('roomCreated', (data: { roomId: string }) => {
-          clearTimeout(timeout);
-          resolve(data.roomId);
-        });
-      });
-
-      const roomId = await roomCreatedPromise;
-
-      // Create room on blockchain
-      await createRoomOnBlockchain(roomId, parseFloat(betAmount), (status) => {
-        setTransactionStatus(status);
-      });
-
+    try {
+      const roomId = Math.random().toString(36).substring(2, 8);
+      const result = await createRoomOnBlockchain(
+        roomId,
+        parseFloat(betAmount),
+        (status) => setTransactionStatus(status)
+      );
       setCreatedRoomId(roomId);
-      setShowRoomCreated(true);
-    } catch (error: any) {
-      console.error('Error creating room:', error);
-      setError(error.message || 'Failed to create room');
+      setTransactionStatus('confirmed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create room');
       setTransactionStatus('failed');
     } finally {
       setIsLoading(false);
@@ -661,219 +511,242 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleJoinRoom = async () => {
-    if (!socket) {
-      setError('Not connected to server');
-      return;
-    }
-
-    if (!roomId) {
-      setError('Please enter a room ID');
-      return;
-    }
-
-    if (!betAmount || isNaN(parseFloat(betAmount)) || parseFloat(betAmount) <= 0) {
-      setError('Please enter a valid bet amount');
-      return;
-    }
-
+    setIsLoading(true);
+    setTransactionStatus('pending');
     try {
-      setIsLoading(true);
-      setError('');
-      setTransactionStatus('pending');
-
-      const ethereumAddress = await getConnectedAccount();
-      if (!ethereumAddress) {
-        throw new Error('No Ethereum address connected');
-      }
-
-      // Join room on blockchain first
-      await joinRoomOnBlockchain(roomId, parseFloat(betAmount), (status) => {
-        setTransactionStatus(status);
-      });
-
-      // Only proceed with socket join if blockchain transaction was successful
-      if (transactionStatus === 'confirmed') {
-        socket.emit('joinRoom', { roomId, ethereumAddress });
-        onJoinRoom(roomId, false, parseFloat(betAmount));
-      }
-    } catch (error: any) {
-      console.error('Error joining room:', error);
-      setError(error.message || 'Failed to join room');
+      await joinRoomOnBlockchain(roomId, parseFloat(betAmount));
+      setTransactionStatus('confirmed');
+      onJoinRoom(roomId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join room');
       setTransactionStatus('failed');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const copyRoomId = () => {
-    if (createdRoomId) {
-      navigator.clipboard.writeText(createdRoomId);
-      alert('Room ID copied to clipboard!');
+  const handleSinglePlayerClick = () => {
+    handleButtonClick(onStartSinglePlayer);
+  };
+
+  const handleMint = async () => {
+    if (!isBlockchainConnected || !ethereumAddress) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      setIsMinting(true);
+
+      // Encode the fuse key with the user's address
+      const encodedFuseKey = encodeFuseKey(ethereumAddress);
+
+      // First, get the signature from the server
+      const signatureResponse = await fetch('http://localhost:3001/api/generate-signature', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress: ethereumAddress,
+          encodedFuseKey,
+        }),
+      });
+
+      const signatureData = await signatureResponse.json();
+
+      if (!signatureResponse.ok) {
+        throw new Error(signatureData.error || 'Failed to get signature');
+      }
+
+      // Get the provider and signer from the user's wallet
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      // Get the contract instance
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      // Call the mint function directly from the user's wallet
+      const tx = await contract.mint(signatureData.signature);
+      
+      // Wait for the transaction to be mined
+      await tx.wait();
+
+      toast.success('NFT minted successfully!', {
+        duration: 5000,
+      });
+    } catch (error: any) {
+      console.error('Error minting NFT:', error);
+      toast.error(error.message || 'Failed to mint NFT');
+    } finally {
+      setIsMinting(false);
     }
   };
 
-  return (
-    <Container>
-      <NavBar>
-        <Logo>
-          Monad Realm
-        </Logo>
-        <WalletContainer>
-          <WalletLogo onClick={() => setShowWallet(!showWallet)} />
-            
-          <WalletWrapper isVisible={showWallet}>
-            <GameWallet 
-              playerAddress={ethereumAddress || ''} 
-              isBlockchainConnected={isBlockchainConnected} 
-            />
-          </WalletWrapper>
-        </WalletContainer>
-      </NavBar>
+  const handleNFTStatusChange = (status: boolean) => {
+    setHasNFT(status);
+  };
 
-      <Title>Monad Realm</Title>
-      <Card>
-        {showRoomCreated ? (
-          <>
-            <RoomInfo>
-              <SuccessMessage>Room Created Successfully!</SuccessMessage>
-              <RoomId>{createdRoomId}</RoomId>
-              <ShareText>Share this ID with other players</ShareText>
-              <CopyButton onClick={copyRoomId}>
-                Copy Room ID
-              </CopyButton>
-              {transactionStatus === 'confirmed' && (
+  return (
+    <>
+      <NavBar>
+        <Title>Monad Realm</Title>
+        <NavRight>
+          <SettingsButton onClick={handleOpenSettings}>
+            <SettingsIcon src={settingsIcon} alt="Settings" />
+          </SettingsButton>
+        </NavRight>
+      </NavBar>
+      <Container>
+        {showSettings && <Settings onClose={handleCloseSettings} />}
+        <SoundToggle onClick={handleSoundToggle}>
+          {isMuted ? <SoundOffIcon /> : <SoundOnIcon />}
+        </SoundToggle>
+        <Card>
+          {!isBlockchainConnected ? (
+            <ConnectWalletMessage>
+              <p>Please connect your wallet to access the game</p>
+              <p>You need to connect your wallet to play PvP mode and earn rewards</p>
+            </ConnectWalletMessage>
+          ) : !hasNFT ? (
+            <NFTPassDisplay 
+              ethereumAddress={ethereumAddress || ''} 
+              onNFTStatusChange={handleNFTStatusChange}
+            />
+          ) : showRoomCreated ? (
+            <>
+              <RoomInfo>
+                <SuccessMessage>Room Created Successfully!</SuccessMessage>
+                <RoomId>{createdRoomId}</RoomId>
+                <ShareText>Share this ID with other players</ShareText>
+                <CopyButton onClick={handleCopyRoomId}>
+                  Copy Room ID
+                </CopyButton>
+                {transactionStatus === 'confirmed' && (
+                  <ButtonGroup>
+                    <Button onClick={handleJoinCreatedRoom}>
+                      Join Room
+                    </Button>
+                    <Button onClick={() => handleButtonClick(() => {
+                      setShowRoomCreated(false);
+                      setCreatedRoomId('');
+                      setTransactionStatus('idle');
+                    })}>
+                      Back
+                    </Button>
+                  </ButtonGroup>
+                )}
+              </RoomInfo>
+            </>
+          ) : showPvPMode ? (
+            <>
+              {showCreateRoom ? (
+                <>
+                  <Label>Set Bet Amount (MON)</Label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(e.target.value)}
+                    placeholder="Enter bet amount"
+                  />
+                  <ButtonGroup>
+                    <Button onClick={() => handleButtonClick(handleCreateRoom)} disabled={isLoading}>
+                      {isLoading ? 'Creating...' : 'Create Room'}
+                    </Button>
+                    <Button onClick={() => handleButtonClick(() => setShowCreateRoom(false))}>Back</Button>
+                  </ButtonGroup>
+                  {transactionStatus !== 'idle' && (
+                    <TransactionStatusIndicator status={transactionStatus}>
+                      {transactionStatus === 'pending' && 'Confirming transaction...'}
+                      {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
+                      {transactionStatus === 'failed' && 'Transaction failed'}
+                    </TransactionStatusIndicator>
+                  )}
+                  {error && (
+                    <p style={{ color: 'red', marginTop: '1rem' }}>
+                      {error}
+                    </p>
+                  )}
+                </>
+              ) : showJoinRoom ? (
+                <>
+                  <Label>Room ID</Label>
+                  <Input
+                    type="text"
+                    value={roomId}
+                    onChange={(e) => setRoomId(e.target.value)}
+                    placeholder="Enter room ID"
+                  />
+                  <Label>Bet Amount (MON)</Label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(e.target.value)}
+                    placeholder="Enter bet amount"
+                  />
+                  <ButtonGroup>
+                    <Button onClick={() => handleButtonClick(handleJoinRoom)} disabled={isLoading}>
+                      {isLoading ? 'Joining...' : 'Join Room'}
+                    </Button>
+                    <Button onClick={() => handleButtonClick(() => setShowJoinRoom(false))}>Back</Button>
+                  </ButtonGroup>
+                  {transactionStatus !== 'idle' && (
+                    <TransactionStatusIndicator status={transactionStatus}>
+                      {transactionStatus === 'pending' && 'Confirming transaction...'}
+                      {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
+                      {transactionStatus === 'failed' && 'Transaction failed'}
+                    </TransactionStatusIndicator>
+                  )}
+                  {error && (
+                    <p style={{ color: 'red', marginTop: '1rem' }}>
+                      {error}
+                    </p>
+                  )}
+                </>
+              ) : (
                 <ButtonGroup>
-                  <Button onClick={() => {
-                    if (createdRoomId && betAmount) {
-                      const betAmountNum = parseFloat(betAmount);
-                      if (!isNaN(betAmountNum)) {
-                        onJoinRoom(createdRoomId, true, betAmountNum);
-                      }
-                    }
-                  }}>
-                    Join Room
-                  </Button>
-                  <Button onClick={() => {
-                    setShowRoomCreated(false);
-                    setCreatedRoomId('');
-                    setTransactionStatus('idle');
-                  }}>
-                    Back
-                  </Button>
+                  <Button onClick={() => handleButtonClick(() => setShowCreateRoom(true))}>Create Room</Button>
+                  <Button onClick={() => handleButtonClick(() => setShowJoinRoom(true))}>Join Room</Button>
+                  <Button onClick={() => handleButtonClick(() => setShowPvPMode(false))}>Back</Button>
                 </ButtonGroup>
               )}
-            </RoomInfo>
-          </>
-        ) : showPvPMode ? (
-          <>
-            {showCreateRoom ? (
-              <>
-                <Label>Set Bet Amount (MON)</Label>
-                <Input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
-                  placeholder="Enter bet amount"
-                />
-                <ButtonGroup>
-                  <Button onClick={handleCreateRoom} disabled={isLoading}>
-                    {isLoading ? 'Creating...' : 'Create Room'}
-                  </Button>
-                  <Button onClick={() => setShowCreateRoom(false)}>Back</Button>
-                </ButtonGroup>
-                {transactionStatus !== 'idle' && (
-                  <TransactionStatusIndicator status={transactionStatus}>
-                    {transactionStatus === 'pending' && 'Confirming transaction...'}
-                    {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
-                    {transactionStatus === 'failed' && 'Transaction failed'}
-                  </TransactionStatusIndicator>
-                )}
-                {error && (
-                  <p style={{ color: 'red', marginTop: '1rem' }}>
-                    {error}
-                  </p>
-                )}
-              </>
-            ) : showJoinRoom ? (
-              <>
-                <Label>Room ID</Label>
-                <Input
-                  type="text"
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                  placeholder="Enter room ID"
-                />
-                <Label>Bet Amount (MON)</Label>
-                <Input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
-                  placeholder="Enter bet amount"
-                />
-                <ButtonGroup>
-                  <Button onClick={handleJoinRoom} disabled={isLoading}>
-                    {isLoading ? 'Joining...' : 'Join Room'}
-                  </Button>
-                  <Button onClick={() => setShowJoinRoom(false)}>Back</Button>
-                </ButtonGroup>
-                {transactionStatus !== 'idle' && (
-                  <TransactionStatusIndicator status={transactionStatus}>
-                    {transactionStatus === 'pending' && 'Confirming transaction...'}
-                    {transactionStatus === 'confirmed' && 'Transaction confirmed!'}
-                    {transactionStatus === 'failed' && 'Transaction failed'}
-                  </TransactionStatusIndicator>
-                )}
-                {error && (
-                  <p style={{ color: 'red', marginTop: '1rem' }}>
-                    {error}
-                  </p>
-                )}
-              </>
-            ) : (
-              <ButtonGroup>
-                <Button onClick={() => setShowCreateRoom(true)}>Create Room</Button>
-                <Button onClick={() => setShowJoinRoom(true)}>Join Room</Button>
-                <Button onClick={() => setShowPvPMode(false)}>Back</Button>
-              </ButtonGroup>
-            )}
-          </>
-        ) : (
-          <ButtonGroup>
-            <Button onClick={() => {
-              if (ethereumAddress) {
-                onStartSinglePlayer();
-              } else {
-                console.error('No Ethereum address available');
-              }
-            }}>Single Player</Button>
-            <Button onClick={() => setShowPvPMode(true)}>PvP Mode</Button>
-          </ButtonGroup>
+            </>
+          ) : (
+            <ButtonGroup>
+              <Button onClick={handleSinglePlayerClick}>
+                SINGLE PLAYER
+              </Button>
+              <Button onClick={() => handleButtonClick(() => setShowPvPMode(true))}>
+                PVP
+              </Button>
+            </ButtonGroup>
+          )}
+        </Card>
+        
+        {isLoading && (
+          <LoadingOverlay>
+            <LoadingContent>
+              <h3>Processing Transaction</h3>
+              <LoadingSpinner />
+              <p>Please wait while we process your transaction...</p>
+              {transactionStatus === 'pending' && (
+                <p>Confirming transaction on blockchain...</p>
+              )}
+              {transactionStatus === 'confirmed' && (
+                <p>Transaction confirmed! Preparing game...</p>
+              )}
+              {transactionStatus === 'failed' && (
+                <p>Transaction failed. Please try again.</p>
+              )}
+            </LoadingContent>
+          </LoadingOverlay>
         )}
-      </Card>
-      
-      {isLoading && (
-        <LoadingOverlay>
-          <LoadingContent>
-            <h3>Processing Transaction</h3>
-            <LoadingSpinner />
-            <p>Please wait while we process your transaction...</p>
-            {transactionStatus === 'pending' && (
-              <p>Confirming transaction on blockchain...</p>
-            )}
-            {transactionStatus === 'confirmed' && (
-              <p>Transaction confirmed! Preparing game...</p>
-            )}
-            {transactionStatus === 'failed' && (
-              <p>Transaction failed. Please try again.</p>
-            )}
-          </LoadingContent>
-        </LoadingOverlay>
-      )}
-    </Container>
+      </Container>
+    </>
   );
 };
 

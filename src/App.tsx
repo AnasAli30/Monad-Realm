@@ -7,6 +7,7 @@ import HomeScreen from './components/HomeScreen';
 import WalletConnect from './components/WalletConnect';
 import GameWallet from './components/GameWallet';
 import SinglePlayerGame from './components/SinglePlayerGame';
+import { GlobalStyles } from './styles/GlobalStyles';
 
 interface Position {
   x: number;
@@ -214,6 +215,7 @@ const App: React.FC = () => {
 
   return (
     <AppContainer>
+      <GlobalStyles />
       <Toaster 
         position="top-center" 
         toastOptions={{
@@ -230,12 +232,12 @@ const App: React.FC = () => {
       {showHomeScreen ? (
         <>
           <WalletConnect onConnect={handleWalletConnect} />
-          {/* {isBlockchainConnected && connectedAccount && (
+          {isBlockchainConnected && connectedAccount && (
             <GameWallet 
               playerAddress={connectedAccount} 
               isBlockchainConnected={isBlockchainConnected} 
             />
-          )} */}
+          )}
           <HomeScreen 
             socket={socket} 
             onJoinRoom={handleJoinRoom} 

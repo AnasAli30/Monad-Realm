@@ -95,4 +95,43 @@ export async function depositToPlayer(
     onStatusUpdate('failed');
     throw error;
   }
+}
+
+export async function mintNFT(
+  userAddress: string,
+  signature: string,
+  onStatusUpdate: (status: TransactionStatus) => void
+): Promise<string> {
+  try {
+    onStatusUpdate('pending');
+
+    // Get contract instance
+    const contract = new ethers.Contract(
+      CONTRACT_ADDRESS,
+      CONTRACT_ABI,
+      serverWallet
+    );
+
+    // Estimate gas for the transaction
+    const gasEstimate = await contract.mint.estimateGas(signature);
+    
+    // Send transaction with 20% buffer for gas
+    const tx = await contract.mint(signature, {
+      gasLimit: gasEstimate * 120n / 100n
+    });
+
+    // Wait for transaction to be mined
+    const receipt = await tx.wait();
+    
+    if (receipt.status === 1) {
+      onStatusUpdate('confirmed');
+      return tx.hash;
+    } else {
+      throw new Error('Transaction failed');
+    }
+  } catch (error: any) {
+    console.error('Error in mintNFT:', error);
+    onStatusUpdate('failed');
+    throw error;
+  }
 } 

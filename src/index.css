@@ -34,27 +34,32 @@
   --gradient-primary: linear-gradient(135deg, var(--color-primary), #2e7d32);
   --gradient-secondary: linear-gradient(135deg, var(--color-secondary), #0288d1);
   --gradient-dark: linear-gradient(135deg, var(--color-dark), #000000);
-
-  color-scheme: light dark;
-  color: var(--color-text);
-  background-color: var(--color-background);
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: var(--color-secondary);
-  text-decoration: inherit;
-  transition: color var(--transition-speed) ease;
-}
-a:hover {
-  color: var(--color-secondary-hover);
-}
-
+  
+  /* 3D perspective and transformation variables */
+  --perspective-distance: 1000px;
+  --board-rotation-x: 15deg;
+  --board-rotation-y: 0deg;
+  --board-rotation-z: 0deg;
+  --cell-height: 10px;
+  --transition-3d: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 3D lighting and shadow variables */
+  --light-source-angle: 315deg;
+  --light-intensity: 60%;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 4px;
+  --shadow-blur: 15px;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  
+  /* 3D element colors with depth */
+  --color-snake-body-shadow: rgba(76, 175, 80, 0.4);
+  --color-food-shadow: rgba(244, 67, 54, 0.6);
+  --color-grid-shadow: rgba(0, 0, 0, 0.2);
+  
+  /* 3D-specific shadow effects */
+  --shadow-cell-3d: 0 var(--cell-height) 15px rgba(0, 0, 0, 0.3);
+  --shadow-food-3d: 0 calc(var(--cell-height) * 2) 20px rgba(244, 67, 54, 0.4);
+  --shadow-snake-3d: 0 var(--cell-height) 15px rgba(76, 175, 80, 0.3);
 body {
   margin: 0;
   display: flex;

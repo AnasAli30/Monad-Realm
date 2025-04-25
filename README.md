@@ -1,3 +1,43 @@
+# PVP Snake Game with 2D-3D Mixture UI
+
+This is a multiplayer snake game with an enhanced 2D-3D mixture UI that provides an immersive gaming experience while maintaining the classic snake game mechanics.
+
+## Features
+
+### 3D View Controls
+- Toggle between 2D and 3D views with a simple button click
+- Manual rotation through mouse drag interaction
+- Auto-rotation option for hands-free 3D viewing
+- Smooth transitions between different view modes
+
+### Enhanced 3D Depth Effects
+- Proper perspective and 3D transformations
+- Dynamic shadows and lighting effects
+- Depth-based layering for game elements (snake, food, grid)
+- Direction-based rotation for snake segments
+
+### Particle and Visual Effects
+- 3D particle effects when scoring points
+- Enhanced confetti with 3D transformations
+- Smooth transitions for game state changes
+- Dynamic lighting based on movement
+
+### Responsive Design
+- Adaptive 3D effects based on screen size
+- Properly scaled for different devices
+- Optimized performance for various hardware
+
+## Future Enhancement Opportunities
+1. Touch controls for mobile 3D rotation
+2. Varying depths for different food types
+3. Power-up effects with 3D animations
+4. Optional performance mode for lower-end devices
+
+## Implementation Details
+The 2D-3D mixture UI is implemented using CSS 3D transforms and React state management, with no changes to the server-side game logic. The implementation leverages CSS variables for easy customization and styled-components for component-based styling.
+
+The UI allows players to seamlessly switch between traditional 2D gameplay and an enhanced 3D perspective, providing visual depth while maintaining the same game mechanics and controls.
+
 # MonadRealm
 
 A blockchain-powered gaming platform on the Monad testnet where players can compete in various games and earn MON tokens.

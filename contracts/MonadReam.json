@@ -1,0 +1,21 @@
+{
+    "name": "Monad Realm #1",
+    "symbol": "MR",
+    "description": "Monad Realm NFT Collection",
+    "image": "ipfs://bafybeic3dhvcvjqvjgiifhpsv2e7kmrbsbigj47ctri4yu3bwwehzqs7ki",
+    "attributes": [
+      {
+        "trait_type": "Type",
+        "value": "Monad Realm"
+      }
+    ],
+    "properties": {
+      "files": [
+        {
+          "uri": "ipfs://bafybeic3dhvcvjqvjgiifhpsv2e7kmrbsbigj47ctri4yu3bwwehzqs7ki",
+          "type": "image/png"
+        }
+      ],
+      "category": "image"
+    }
+  }

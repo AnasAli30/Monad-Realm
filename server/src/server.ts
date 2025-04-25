@@ -3,8 +3,26 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { endGameOnBlockchain, depositToPlayer } from './services/blockchainService';
 import { TransactionStatus } from './types';
+import { ethers } from 'ethers';
+import { verifyFuseKey, decodeFuseKey } from './utils/fuseDecoder';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
+
+// Enable CORS for all routes
+app.use(cors({
+  origin: 'http://localhost:5173', // Your frontend URL
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: true
+}));
+
+// Parse JSON bodies
+app.use(express.json());
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -12,6 +30,9 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST"]
   }
 });
+
+// Add server's private key (should be moved to environment variables in production)
+const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY || 'your-server-private-key';
 
 interface Position {
   x: number;
@@ -635,6 +656,83 @@ io.on('connection', (socket) => {
     }
     singlePlayerGames.delete(socket.id);
   });
+});
+
+// Add endpoint to generate signature
+app.post('/api/generate-signature', async (req, res) => {
+  try {
+    const { userAddress, encodedFuseKey } = req.body;
+    console.log(req.body);
+    
+    if (!userAddress || !encodedFuseKey) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    // Verify the encoded fuse key
+    if (!verifyFuseKey(userAddress, encodedFuseKey)) {
+      return res.status(401).json({ error: 'Invalid encoded key' });
+    }
+
+    // Create wallet from private key
+    const wallet = new ethers.Wallet(SERVER_PRIVATE_KEY);
+    
+    // Create message hash
+    const messageHash = ethers.keccak256(
+      ethers.solidityPacked(
+        ['address'],
+        [userAddress]
+      )
+    );
+    
+    // Sign the message
+    const signature = await wallet.signMessage(
+      ethers.getBytes(messageHash)
+    );
+
+    res.json({ signature });
+  } catch (error) {
+    console.error('Error generating signature:', error);
+    res.status(500).json({ error: 'Failed to generate signature' });
+  }
+});
+
+app.post('/api/verify-fuse', async (req, res) => {
+  try {
+    const { encodedKey, userAddress } = req.body;
+    
+    if (!encodedKey || !userAddress) {
+      return res.status(400).json({ error: 'Missing encoded key or user address' });
+    }
+
+    // Decode the key to get the address
+    const decodedData = decodeFuseKey(encodedKey, userAddress);
+    if (!decodedData) {
+      return res.status(401).json({ error: 'Invalid encoded key' });
+    }
+
+    const { address } = decodedData;
+
+    // Create wallet from private key
+    const wallet = new ethers.Wallet(SERVER_PRIVATE_KEY);
+    
+    // Create message hash
+    const messageHash = ethers.keccak256(
+      ethers.solidityPacked(
+        ['address'],
+        [address]
+      )
+    );
+    
+    // Sign the message
+    const signature = await wallet.signMessage(
+      ethers.getBytes(messageHash)
+    );
+
+    res.json({ signature });
+  } catch (error) {
+    console.error('Error generating signature:', error);
+    res.status(500).json({ error: 'Failed to generate signature' });
+  }
 });
 
 const PORT = process.env.PORT || 3001;

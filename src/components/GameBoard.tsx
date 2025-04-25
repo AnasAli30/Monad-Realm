@@ -170,11 +170,36 @@ const statusPulse = keyframes`
   100% { opacity: 0.7; }
 `;
 
+// Add new keyframes for particle effects
+const float3D = keyframes`
+  0% { transform: translate3d(0, 0, 0); opacity: 1; }
+  50% { transform: translate3d(${() => Math.random() * 20 - 10}px, -20px, 20px); opacity: 0.5; }
+  100% { transform: translate3d(${() => Math.random() * 40 - 20}px, -40px, 0); opacity: 0; }
+`;
+
 // Define Grid shimmer effect
 const gridShimmer = keyframes`
   0% { box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4), inset 0 0 5px rgba(97, 218, 251, 0.1); }
   50% { box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(97, 218, 251, 0.3); }
   100% { box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4), inset 0 0 5px rgba(97, 218, 251, 0.1); }
+`;
+
+const glow = keyframes`
+  0% {
+    box-shadow: 0 0 5px rgba(97, 218, 251, 0.5),
+                0 0 10px rgba(97, 218, 251, 0.3),
+                0 0 15px rgba(97, 218, 251, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(97, 218, 251, 0.8),
+                0 0 20px rgba(97, 218, 251, 0.5),
+                0 0 30px rgba(97, 218, 251, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(97, 218, 251, 0.5),
+                0 0 10px rgba(97, 218, 251, 0.3),
+                0 0 15px rgba(97, 218, 251, 0.2);
+  }
 `;
 
 // Now define styled components
@@ -190,31 +215,18 @@ const GameContainer = styled.div`
   margin: 0;
   border-radius: 0;
   box-shadow: inset 0 0 50px rgba(97, 218, 251, 0.2);
-  transition: all var(--transition-speed) ease;
   position: relative;
   overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-      linear-gradient(
-        rgba(255, 255, 255, 0.05) 1px, 
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg, 
-        rgba(255, 255, 255, 0.05) 1px, 
-        transparent 1px
-      );
-    background-size: 20px 20px;
-    pointer-events: none;
-    z-index: 1;
+  perspective: var(--grid-perspective);
+  transform-style: preserve-3d;
+  transition: all var(--transition-speed) ease, 
+             transform var(--transition-3d-slow), 
+             perspective var(--transition-3d-slow);
+
+  &[data-game-status="inProgress"] {
+    animation: ${glow} 4s infinite ease-in-out;
   }
+  
   
   &::after {
     content: '';
@@ -246,7 +258,7 @@ const GameContainer = styled.div`
   }
 `;
 
-const Grid = styled.div<{ size: number }>`
+const Grid = styled.div<{ size: number; $is3D?: boolean }>`
   display: grid;
   grid-template-columns: repeat(${props => props.size}, 1fr);
   grid-template-rows: repeat(${props => props.size}, 1fr);
@@ -259,25 +271,78 @@ const Grid = styled.div<{ size: number }>`
   box-sizing: border-box;
   box-shadow: 
     inset 0 0 15px rgba(0, 0, 0, 0.4),
-    inset 0 0 5px rgba(255, 255, 255, 0.1);
+    inset 0 0 5px rgba(255, 255, 255, 0.1),
+    var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-color);
   animation: ${fadeIn} 0.5s ease-out, ${gridShimmer} 5s ease-in-out infinite;
   position: relative;
-  z-index: 2;
   border: min(2px, 0.3vmin) solid rgba(97, 218, 251, 0.2);
-  transform: perspective(1000px) rotateX(5deg);
+  transform: ${props => props.$is3D !== false ? `
+    perspective(var(--grid-perspective))
+    rotateX(var(--grid-tilt))
+    rotateY(var(--grid-rotation))
+    rotateZ(var(--board-rotation-z))
+    scale3d(var(--grid-scale), var(--grid-scale), 1)
+  ` : 'none'};
   transform-style: preserve-3d;
-  transition: transform 0.5s ease;
+  transition: all var(--transition-3d-slow), transform var(--transition-3d-slow);
+  transform-origin: center center;
+  backface-visibility: hidden;
   margin: auto;
+  box-shadow: ${props => props.$is3D !== false ? `
+    0 var(--shadow-depth-snake) var(--shadow-blur) rgba(0, 0, 0, 0.3),
+    0 var(--shadow-depth-food) var(--shadow-blur) var(--color-food-shadow)
+  ` : 'none'};
+  
+  ${props => props.$is3D !== false && css`
+    &:hover {
+      box-shadow: 
+        0 30px 40px rgba(0, 0, 0, 0.4),
+        0 0 30px rgba(97, 218, 251, 0.2);
+    }
+  `}
   
   &:hover {
-    transform: perspective(1000px) rotateX(0deg);
+    transform: ${props => props.$is3D !== false ? `
+      rotateX(5deg)
+      rotateY(5deg)
+      rotateZ(var(--board-rotation-z))
+    ` : 'none'};
+  }
+  
+  @media (max-width: 768px) {
+    &:hover {
+      transform: ${props => props.$is3D !== false ? `
+        rotateX(var(--board-rotation-x))
+        rotateY(var(--board-rotation-y))
+        rotateZ(var(--board-rotation-z))
+      ` : 'none'};
+    }
   }
 `;
-const Cell = styled.div<CellProps>`
+const Cell = styled.div<CellProps & { $is3D?: boolean }>`
   width: 100%;
   height: 100%;
   aspect-ratio: 1 / 1;
   border-radius: var(--border-radius-sm);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: all var(--transition-3d-fast), transform var(--transition-3d-slow);
+
+  ${props => props.$is3D && css`
+    &:hover {
+      transform: ${props => {
+        const baseTransform = props.type === 'food' 
+          ? 'translateZ(calc(var(--shadow-depth-food) + 5px))' 
+          : props.$isHead 
+            ? 'translateZ(calc(var(--shadow-depth-head) + 5px))' 
+            : 'translateZ(calc(var(--shadow-depth-snake) + 5px))';
+        
+        return `${baseTransform} scale(1.1)`;
+      }};
+      filter: brightness(1.2);
+      z-index: 10;
+    }
+  `}
   background: ${props => {
     switch (props.type) {
       case 'food':
@@ -306,17 +371,71 @@ const Cell = styled.div<CellProps>`
   }};
   transition: all 0.15s cubic-bezier(0.34, 1.26, 0.64, 1);
   box-shadow: ${props => {
-    if (props.type === 'food') return '0 0 12px rgba(244, 67, 54, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.6)';
-    if (props.$isHead) return '0 0 10px rgba(0, 200, 170, 0.7)';
-    if (['player', 'snake'].includes(props.type)) return 'inset 0 0 4px rgba(255, 255, 255, 0.2)';
-    return 'none';
+    if (!props.$is3D) return props.type === 'food' ? '0 0 12px rgba(244, 67, 54, 0.8)' : 'none';
+    
+    const depth = props.type === 'food' 
+      ? 'var(--shadow-depth-food)' 
+      : props.$isHead 
+        ? 'var(--shadow-depth-head)' 
+        : 'var(--shadow-depth-snake)';
+    
+    return `
+      0 ${depth} ${props.type === 'food' ? '20px' : '15px'} 
+      ${props.type === 'food' 
+        ? 'rgba(244, 67, 54, 0.4)' 
+        : props.$isHead 
+          ? 'rgba(0, 200, 170, 0.4)' 
+          : 'rgba(76, 175, 80, 0.3)'},
+      inset 0 0 10px rgba(255, 255, 255, 0.2)
+    `;
   }};
   transform: ${props => {
-    if (props.type === 'food') return 'scale(0.85)';
-    if (props.$isCollision) return 'scale(1.15)';
-    if (props.$isTrail) return 'scale(0.95)';
-    if (props.$isHead) return 'scale(1.08)';
-    return 'scale(1)';
+    if (props.$is3D === false) {
+      return props.type === 'food' ? 'scale(0.85)' :
+             props.$isCollision ? 'scale(1.15)' :
+             props.$isTrail ? 'scale(0.95)' :
+             props.$isHead ? 'scale(1.08)' : 'scale(1)';
+    }
+    
+    // Enhanced 3D transforms
+    const depth = props.type === 'food' ? 
+      'var(--shadow-depth-food)' : 
+      props.$isHead ? 
+        'var(--shadow-depth-head)' : 
+        'var(--shadow-depth-snake)';
+    
+    let scale = props.type === 'food' ? 0.85 :
+                props.$isCollision ? 1.15 :
+                props.$isTrail ? 0.95 :
+                props.$isHead ? 1.08 : 1;
+    
+    let rotateX = 0;
+    let rotateY = 0;
+    
+    // Add dynamic rotation based on movement direction
+    if (props.direction) {
+      switch(props.direction) {
+        case 'up':
+          rotateX = -15;
+          break;
+        case 'down':
+          rotateX = 15;
+          break;
+        case 'left':
+          rotateY = -15;
+          break;
+        case 'right':
+          rotateY = 15;
+          break;
+      }
+    }
+    
+    return `
+      translate3d(0, 0, ${depth})
+      rotateX(${rotateX}deg)
+      rotateY(${rotateY}deg)
+      scale(${scale})
+    `;
   }};
   position: relative;
   overflow: hidden;
@@ -328,7 +447,6 @@ const Cell = styled.div<CellProps>`
     if (props.$isTrail) return css`${trailFade} 0.5s ease-out forwards`;
     return 'none';
   }};
-  
   &::before {
     content: '';
     position: absolute;
@@ -337,28 +455,57 @@ const Cell = styled.div<CellProps>`
     right: 0;
     bottom: 0;
     border-radius: inherit;
-    opacity: ${props => props.$isHead ? 0.4 : 0.2};
-    z-index: 1;
-    ${props => props.$isHead && css`
-      background: radial-gradient(circle at center, white 0%, transparent 70%);
-      transform: scale(0.7);
-    `}
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    
+    ${props => {
+      if (props.$is3D === false) return '';
+      
+      if (props.$isHead) {
+        return css`
+          background: radial-gradient(circle at center, white 0%, transparent 70%);
+          transform: translateZ(2px);
+          opacity: 0.4;
+        `;
+      }
+      
+      if (props.type === 'food') {
+        return css`
+          background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+          transform: translateZ(4px);
+          opacity: 0.6;
+          box-shadow: 0 0 15px rgba(255, 100, 100, 0.8);
+        `;
+      }
+      
+      return css`
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+        transform: translateZ(1px);
+        opacity: 0.2;
+      `;
+    }}
   }
   
   &::after {
-    content: ${props => props.$isHead && props.direction ? "''" : props.type === 'food' ? "''" : 'none'};
+    content: ${props => props.$isHead || props.type === 'food' ? "''" : 'none'};
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
     z-index: 2;
     
     ${props => {
+      if (props.$is3D === false) return '';
+      
       if (props.$isHead && props.direction) {
-        return `
+        // Enhanced 3D direction indicator
+        return css`
           width: 0;
           height: 0;
           border: 8px solid transparent;
+          transform: translate(-50%, -50%) translateZ(4px);
+          
           ${(() => {
             switch(props.direction) {
               case 'up':
@@ -388,9 +535,21 @@ const Cell = styled.div<CellProps>`
               default:
                 return '';
             }
-          })()
-        }`;
+          })()}
+        `;
       }
+      
+      if (props.type === 'food') {
+        return css`
+          width: 30%;
+          height: 30%;
+          background: rgba(255, 255, 255, 0.8);
+          border-radius: 50%;
+          transform: translate(-50%, -50%) translateZ(6px);
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+        `;
+      }
+      
       return '';
     }}
   }
@@ -835,6 +994,33 @@ const Confetti = styled.div<ConfettiProps>`
   }
 `;
 
+const Particle3D = styled.div<{ delay: number; color: string }>`
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: ${props => props.color};
+  border-radius: 50%;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  animation: ${float3D} 1s ease-out forwards;
+  animation-delay: ${props => props.delay}ms;
+  box-shadow: 0 0 10px ${props => props.color}80;
+  z-index: 100;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at center, ${props => props.color}80 0%, transparent 70%);
+    transform: translateZ(2px);
+    opacity: 0.6;
+  }
+`;
+
 const GameOverModal = styled.div`
   position: fixed;
   top: 0;
@@ -1179,6 +1365,35 @@ const WinnerDetails = styled.div`
   }
 `;
 
+const ViewControls = styled.div`
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+`;
+
+const ViewButton = styled(Button)`
+  padding: 8px 12px;
+  font-size: 0.9em;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  transform-style: preserve-3d;
+
+  &:hover {
+    opacity: 1;
+    transform: translateY(-2px) translateZ(5px);
+  }
+
+  &.active {
+    background: var(--color-secondary);
+    color: white;
+    transform: translateZ(10px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+`;
+
 // Component props
 const GameBoard = ({
   gameState,
@@ -1201,11 +1416,21 @@ const GameBoard = ({
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatus>('idle');
   const [scoreChanged, setScoreChanged] = useState(false);
   const [isCalculatingWinner, setIsCalculatingWinner] = useState(false);
+  const [is3DView, setIs3DView] = useState(true);
+  const [viewRotation, setViewRotation] = useState({ x: 15, y: 0, z: 0 });
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [particles, setParticles] = useState<Array<{
+    id: number;
+    x: number;
+    y: number;
+    color: string;
+  }>>([]);
   // Define currentPlayer before using it in any hooks
-  const currentPlayer: Player | undefined = players.find(p => p.id === playerId);
+  const currentPlayer = players.find(p => p.id === playerId);
   const allPlayers = players.length;
   const readyPlayers = players.filter(p => p.ready).length;
 
+  // Add useEffect for time tracking
   useEffect(() => {
     if (!endTime) return;
     
@@ -1231,7 +1456,7 @@ const GameBoard = ({
         console.error('Error clearing interval:', error);
       }
     };
-  }, [gameStatus, startTime, endTime]);
+  }, [endTime]);
   // Track score changes to trigger animation
   useEffect(() => {
     // Safe check for currentPlayer with proper typing
@@ -1250,6 +1475,100 @@ const GameBoard = ({
       };
     }
   }, [currentPlayer]);
+
+  // Create particles when score increases
+  useEffect(() => {
+    if (currentPlayer && currentPlayer.score > 0) {
+      // Create particles when score increases
+      const newParticles = Array.from({ length: 5 }).map((_, i) => ({
+        id: Date.now() + i,
+        x: currentPlayer.position.x,
+        y: currentPlayer.position.y,
+        color: 'var(--color-secondary)'
+      }));
+      setParticles(prev => [...prev, ...newParticles]);
+
+      // Clean up particles after animation
+      const timer = setTimeout(() => {
+        setParticles(prev => prev.filter(p => p.id < Date.now()));
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentPlayer?.score]);
+
+  // Add mouse interaction for 3D rotation
+  useEffect(() => {
+    if (!is3DView) return;
+
+    // Disable auto-rotation when manual dragging begins
+    let isDragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const deltaX = e.clientX - lastX;
+      const deltaY = e.clientY - lastY;
+
+      setViewRotation(prev => ({
+        ...prev,
+        y: prev.y + deltaX * 0.5,
+        x: Math.max(0, Math.min(30, prev.x + deltaY * 0.5))
+      }));
+
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+    };
+
+    const grid = document.querySelector('.game-container');
+    if (grid) {
+      grid.addEventListener('mousedown', handleMouseDown);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      if (grid) {
+        grid.removeEventListener('mousedown', handleMouseDown);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      }
+    };
+  }, [is3DView]);
+
+  // Add useEffect for auto-rotation
+  useEffect(() => {
+    if (!is3DView || !autoRotate) return;
+
+    let animationFrame: number;
+    const animate = () => {
+      setViewRotation(prev => ({
+        ...prev,
+        y: (prev.y + 0.2) % 360
+      }));
+      animationFrame = requestAnimationFrame(animate);
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [is3DView, autoRotate, gameStatus]);
 
   useEffect(() => {
     if (socket) {
@@ -1365,6 +1684,7 @@ const GameBoard = ({
             $isTrail={cellType !== 'empty' && cellType !== 'food' && !isHead}
             $isWinner={isWinner}
             $isLoser={isLoser}
+            $is3D={is3DView}
           />
         );
       }
@@ -1556,9 +1876,32 @@ const GameBoard = ({
         </ScoreboardPanel>
       )}
       
-      <GameContainer className="game-container" data-game-status={gameStatus}>
-        <Grid size={gridSize} className={gameStatus === 'inProgress' ? 'active-grid' : ''}>
+      <GameContainer 
+        className="game-container" 
+        data-game-status={gameStatus}
+        style={{
+          '--board-rotation-x': `${viewRotation.x}deg`,
+          '--board-rotation-y': `${viewRotation.y + (autoRotate ? Date.now() * 0.01 % 360 : 0)}deg`,
+          '--board-rotation-z': `${viewRotation.z}deg`
+        } as React.CSSProperties}
+      >
+        <Grid 
+          size={gridSize} 
+          className={gameStatus === 'inProgress' ? 'active-grid' : ''}
+          $is3D={is3DView}
+        >
           {renderGrid()}
+          {particles.map((particle) => (
+            <Particle3D
+              key={particle.id}
+              delay={particle.id % 5 * 100}
+              color={particle.color}
+              style={{
+                left: `${(particle.x * 100) / gridSize}%`,
+                top: `${(particle.y * 100) / gridSize}%`
+              }}
+            />
+          ))}
         </Grid>
       </GameContainer>
 
@@ -1681,6 +2024,24 @@ const GameBoard = ({
           </WinnerCalculationContent>
         </WinnerCalculationOverlay>
       )}
+
+      {/* 3D View Controls */}
+      <ViewControls>
+        <ViewButton
+          onClick={() => setIs3DView(!is3DView)}
+          className={is3DView ? 'active' : ''}
+        >
+          {is3DView ? '2D View' : '3D View'}
+        </ViewButton>
+        {is3DView && (
+          <ViewButton
+            onClick={() => setAutoRotate(!autoRotate)}
+            className={autoRotate ? 'active' : ''}
+          >
+            {autoRotate ? 'Stop Rotation' : 'Auto Rotate'}
+          </ViewButton>
+        )}
+      </ViewControls>
     </>
   );
 };

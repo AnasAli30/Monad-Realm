@@ -3,14 +3,10 @@ import styled, { keyframes, css } from 'styled-components';
 import { io, Socket } from 'socket.io-client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Snake3D from './Snake3D';
 
 const GAME_DURATION = 180000; // 3 minutes in milliseconds
 const GRID_SIZE = 30;
-
-interface Position {
-  x: number;
-  y: number;
-}
 
 interface GameState {
   snake: Position[];
@@ -22,6 +18,9 @@ interface GameState {
   endTime: number | null;
   monCoinsEarned: number;
 }
+
+// Define a type for the view mode
+type ViewMode = '2d' | '3d';
 
 // Define keyframe animations
 const fadeIn = keyframes`
@@ -77,7 +76,7 @@ const gridShimmer = keyframes`
 const Container = styled.div`
   width: 100vw;
   height: 100vh;
-  background: var(--gradient-dark);
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -86,28 +85,10 @@ const Container = styled.div`
   top: 0;
   left: 0;
   z-index: 1000;
+  perspective: 1000px;
+  overflow: hidden;
   
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-      linear-gradient(
-        rgba(255, 255, 255, 0.05) 1px, 
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg, 
-        rgba(255, 255, 255, 0.05) 1px, 
-        transparent 1px
-      );
-    background-size: 20px 20px;
-    pointer-events: none;
-    z-index: 1;
-  }
+  
   
   &::after {
     content: '';
@@ -132,6 +113,16 @@ const GameContainer = styled.div`
   border: 2px solid rgba(97, 218, 251, 0.3);
   box-shadow: 0 0 20px rgba(97, 218, 251, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.5);
   animation: ${gridShimmer} 3s infinite;
+  
+  &.view3d {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    animation: none;
+  }
 `;
 
 const Grid = styled.div<{ size: number }>`
@@ -280,6 +271,28 @@ const ScorePanel = styled.div`
   backdrop-filter: blur(5px);
 `;
 
+const ViewToggle = styled.button`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px 15px;
+  border-radius: 5px;
+  color: white;
+  font-size: 1rem;
+  z-index: 100;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(97, 218, 251, 0.2);
+  backdrop-filter: blur(5px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(97, 218, 251, 0.3);
+    transform: translateY(-2px);
+  }
+`;
+
 const Timer = styled.div`
   color: var(--color-secondary);
   font-weight: bold;
@@ -387,7 +400,6 @@ const GameSelectionContent = styled.div`
   text-align: center;
   border: 2px solid var(--color-secondary);
   box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
-  animation: ${gameOverScale} 0.5s ease-out;
   backdrop-filter: blur(5px);
   width: 80%;
   max-width: 500px;
@@ -451,6 +463,7 @@ const SinglePlayerGame: React.FC<{
     monCoinsEarned: 0
   });
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
+  const [viewMode, setViewMode] = useState<ViewMode>('3d'); // Default to 3D view
   const gameLoopRef = useRef<number | null>(null);
   const lastMoveTimeRef = useRef<number>(0);
   const MOVE_COOLDOWN = 150;
@@ -691,6 +704,11 @@ const SinglePlayerGame: React.FC<{
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // Toggle between 2D and 3D views
+  const toggleViewMode = () => {
+    setViewMode(prevMode => prevMode === '2d' ? '3d' : '2d');
+  };
+
   return (
     <Container>
       <ToastContainer />
@@ -717,6 +735,7 @@ const SinglePlayerGame: React.FC<{
           </GameSelectionContent>
         </GameSelectionModal>
       )}
+      
       {showRules && selectedGame === 'snake' && (
         <RulesModal>
           <ModalContent>
@@ -728,11 +747,13 @@ const SinglePlayerGame: React.FC<{
               <li>Avoid hitting the walls or yourself</li>
               <li>Game ends when you hit a wall or time runs out (3 minutes)</li>
               <li>Click on MON rewards to view transactions on Monad Explorer</li>
+              <li>Toggle between 2D and 3D views using the view button</li>
             </ul>
             <Button onClick={startGame}>Start Game</Button>
           </ModalContent>
         </RulesModal>
       )}
+      
       {showRules && selectedGame === 'dice' && (
         <RulesModal>
           <ModalContent>
@@ -749,17 +770,40 @@ const SinglePlayerGame: React.FC<{
           </ModalContent>
         </RulesModal>
       )}
+      
       {!showGameSelection && !showRules && selectedGame === 'snake' && (
-        <GameContainer>
+        <>
           <ScorePanel>
             <div>MON: {gameState.monCoinsEarned.toFixed(4)}</div>
             <Timer>Time: {formatTime(timeLeft)}</Timer>
           </ScorePanel>
-          <Grid size={GRID_SIZE}>
-            {renderGrid()}
-          </Grid>
-        </GameContainer>
+          
+          <ViewToggle onClick={toggleViewMode}>
+            {viewMode === '3d' ? 'Switch to 2D View' : 'Switch to 3D View'}
+          </ViewToggle>
+          
+          {viewMode === '2d' ? (
+            <GameContainer>
+              <Grid size={GRID_SIZE}>
+                {renderGrid()}
+              </Grid>
+            </GameContainer>
+          ) : (
+            <GameContainer className="view3d">
+              <Snake3D 
+                snake={gameState.snake}
+                food={gameState.food}
+                gridSize={GRID_SIZE}
+                direction={gameState.direction}
+                score={gameState.score}
+                gameStatus={gameState.gameStatus}
+                isCurrentPlayer={true}
+              />
+            </GameContainer>
+          )}
+        </>
       )}
+      
       {!showGameSelection && !showRules && selectedGame === 'dice' && (
         <GameContainer>
           <ScorePanel>
