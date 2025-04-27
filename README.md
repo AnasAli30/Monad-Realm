@@ -1,136 +1,138 @@
-# MonadRealm - Blockchain Gaming Platform
+![github-submission-banner](https://github.com/user-attachments/assets/a1493b84-e4e2-456e-a791-ce35ee2bcf2f)
 
-MonadRealm is a blockchain-powered gaming platform on the Monad testnet where players can compete in various games and earn MON tokens. Currently featuring Snake PvP as its flagship game, with plans to expand to more classic games.
+# 🚀 Project Title
 
-## Project Structure
+> A one-line tagline or mission statement for your project.
 
+---
+
+## 📌 Problem Statement
+
+Select the problem statement number and title from the official list given in Participant Manual.
+
+**Example:**  
+**Problem Statement 7 – Transform the Future of Rural Commerce**
+
+---
+
+## 🎯 Objective
+
+What problem does your project solve, and who does it serve?  
+Briefly describe the real-world use case and the value it provides.
+
+---
+
+## 🧠 Team & Approach
+
+### Team Name:  
+`Your team name here`
+
+### Team Members:  
+- Name 1 (GitHub / LinkedIn / Role)  
+- Name 2  
+- Name 3  
+*(Add links if you want)*
+
+### Your Approach:  
+- Why you chose this problem  
+- Key challenges you addressed  
+- Any pivots, brainstorms, or breakthroughs during hacking  
+
+---
+
+## 🛠️ Tech Stack
+
+### Core Technologies Used:
+- Frontend:
+- Backend:
+- Database:
+- APIs:
+- Hosting:
+
+### Sponsor Technologies Used (if any):
+- [ ] **Groq:** _How you used Groq_  
+- [ ] **Monad:** _Your blockchain implementation_  
+- [ ] **Fluvio:** _Real-time data handling_  
+- [ ] **Base:** _AgentKit / OnchainKit / Smart Wallet usage_  
+- [ ] **Screenpipe:** _Screen-based analytics or workflows_  
+- [ ] **Stellar:** _Payments, identity, or token usage_
+*(Mark with ✅ if completed)*
+---
+
+## ✨ Key Features
+
+Highlight the most important features of your project:
+
+- ✅ Feature 1  
+- ✅ Feature 2  
+- ✅ Feature 3  
+- ✅ Feature 4  
+
+Add images, GIFs, or screenshots if helpful!
+
+---
+
+## 📽️ Demo & Deliverables
+
+- **Demo Video Link:** [Paste YouTube or Loom link here]  
+- **Pitch Deck / PPT Link:** [Paste Google Slides / PDF link here]  
+
+---
+
+## ✅ Tasks & Bonus Checklist
+
+- [ ] **All members of the team completed the mandatory task - Followed at least 2 of our social channels and filled the form** (Details in Participant Manual)  
+- [ ] **All members of the team completed Bonus Task 1 - Sharing of Badges and filled the form (2 points)**  (Details in Participant Manual)
+- [ ] **All members of the team completed Bonus Task 2 - Signing up for Sprint.dev and filled the form (3 points)**  (Details in Participant Manual)
+
+*(Mark with ✅ if completed)*
+
+---
+
+## 🧪 How to Run the Project
+
+### Requirements:
+- Node.js / Python / Docker / etc.
+- API Keys (if any)
+- .env file setup (if needed)
+
+### Local Setup:
+```bash
+# Clone the repo
+git clone https://github.com/your-team/project-name
+
+# Install dependencies
+cd project-name
+npm install
+
+# Start development server
+npm run dev
 ```
-monad-realm/
-├── client/           # Frontend React application
-├── server/           # Node.js backend server
-├── contracts/        # Smart contracts for blockchain integration
-│   ├── MonadRealm.sol    # Main platform contract
-│   └── SnakeGame.sol     # Snake game implementation
-├── src/             # Main source code
-├── public/          # Static assets
-└── package.json     # Project dependencies
-```
 
-## Platform Features
+Provide any backend/frontend split or environment setup notes here.
 
-### Gaming Platform
-- Multi-game support (currently featuring Snake PvP)
-- Real-time multiplayer gameplay
-- Tournament and competitive modes
-- Player ranking and statistics
+---
 
-### Current Game: Snake PvP
-- Multiplayer snake gameplay with real-time synchronization
-- 2D-3D hybrid view with smooth transitions
-- Dynamic 3D effects and particle systems
-- Responsive design for various screen sizes
+## 🧬 Future Scope
 
-### Blockchain Integration
-- Smart contract-based room creation and betting
-- MON token rewards for winners
-- MetaMask wallet integration
-- Monad testnet deployment
+List improvements, extensions, or follow-up features:
 
-### Technical Features
-- React with TypeScript for frontend
-- Three.js for 3D rendering
-- Socket.io for real-time multiplayer
-- Ethers.js for blockchain interaction
-- Styled-components for UI styling
+- 📈 More integrations  
+- 🛡️ Security enhancements  
+- 🌐 Localization / broader accessibility  
 
-## Prerequisites
+---
 
-- Node.js (v14 or higher)
-- MetaMask browser extension
-- MON tokens on the Monad testnet
+## 📎 Resources / Credits
 
-## Installation
+- APIs or datasets used  
+- Open source libraries or tools referenced  
+- Acknowledgements  
 
-1. Clone the repository:
-   ```bash
-   git clone [repository-url]
-   cd monad-realm
-   ```
+---
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+## 🏁 Final Words
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+Share your hackathon journey — challenges, learnings, fun moments, or shout-outs!
 
-4. In a separate terminal, start the backend server:
-   ```bash
-   cd server
-   npm install
-   npm run dev
-   ```
-
-## Blockchain Setup
-
-### Smart Contracts
-The platform uses two main smart contracts:
-- `MonadRealm.sol`: Main platform contract for room management, betting, and game coordination
-- `SnakeGame.sol`: Game-specific contract for snake gameplay logic and rewards
-
-### Wallet Configuration
-1. Install MetaMask browser extension
-2. Add the Monad testnet:
-   - Network Name: Monad Testnet
-   - RPC URL: https://testnet-rpc.monad.xyz
-   - Chain ID: 0x279F
-   - Currency Symbol: MON
-   - Block Explorer URL: https://testnet-explorer.monad.xyz
-
-### Getting Test Tokens
-1. Visit the Monad testnet faucet
-2. Connect your wallet
-3. Request test tokens
-
-## How to Play
-
-1. Connect your MetaMask wallet to MonadRealm
-2. Create a game room and set your bet amount in MON tokens
-3. Share the room ID with other players
-4. Players join the room and place their bets
-5. Game starts automatically when all players are ready
-6. Last player standing wins the pot
-
-## Development
-
-### Frontend Development
-The platform frontend is built with:
-- React 19
-- Three.js for 3D graphics
-- React Three Fiber for React integration
-- Styled-components for styling
-
-### Backend Development
-The platform backend uses:
-- Node.js
-- Socket.io for real-time communication
-- Express for API endpoints
-
-### Smart Contract Development
-To deploy platform contracts:
-1. Install Hardhat: `npm install --save-dev hardhat`
-2. Configure Hardhat for Monad testnet
-3. Deploy contracts: `npx hardhat run scripts/deploy.js --network monadTestnet`
-
-## Future Plans
-- Integration of additional classic games
-- Tournament system with larger prize pools
-- Player ranking and achievement system
-- Cross-game rewards and achievements
-
-## License
-
-MIT 
+---
