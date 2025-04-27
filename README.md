@@ -26,8 +26,9 @@ MonadRealm solves the problem of fair and rewarding blockchain gaming by providi
 - Sameer singh bandhari ([GitHub](https://github.com/xtrimDev) / [LinkedIn](https://www.linkedin.com/in/xtrimdev) / Game dev)  
 
 
-### Your Approach:  
-- Why you chose this problem  
+### Approach:
+  
+- Why we chose this problem  
 We wanted to create a blockchain gaming platform that allows players to earn real value through seamless gameplay using Monad's fast and low-cost transactions.
 
 - Key challenges you addressed  
@@ -56,7 +57,6 @@ Introduced NFT collectibles as rewards, boosting player engagement.
 - [ ] **Base:** _AgentKit / OnchainKit / Smart Wallet usage_  
 - [ ] **Screenpipe:** _Screen-based analytics or workflows_  
 - [ ] **Stellar:** _Payments, identity, or token usage_
-*(Mark with ✅ if completed)*
 ---
 
 ## ✨ Key Features
@@ -81,8 +81,6 @@ Introduced NFT collectibles as rewards, boosting player engagement.
 - [x] **All members of the team completed Bonus Task 1 - Sharing of Badges and filled the form (2 points)**  (Details in Participant Manual)
 - [x] **All members of the team completed Bonus Task 2 - Signing up for Sprint.dev and filled the form (3 points)**  (Details in Participant Manual)
 
-*(Mark with ✅ if completed)*
-
 ---
 
 ## 🧪 How to Run the Project
@@ -96,16 +94,16 @@ git clone https://github.com/AnasAli30/monad-realm
 cd Monad-Realm
 npm install
 
-Frontend
+#Frontend
 # Start development server
 npm run dev
 
-Backend
+#Backend
 cd server
 npm run dev
 ```
 
-check env.examples for .env
+check env.examples
 
 ## 🧬 Future Scope
 
@@ -128,4 +126,4 @@ List improvements, extensions, or follow-up features:
 ---
 
 
-And at last Our Hackhazards hackathon journey was an exciting ride! We faced challenges like smooth multiplayer synchronization and optimizing smart contracts for speed, but working through them was a rewarding experience. Big shout-out to the team for the collaboration and perseverance. We learned a lot, and we’re excited about the future of MonadRealm!
+**And at last Our Hackhazards hackathon journey was an exciting ride! We faced challenges like smooth multiplayer synchronization and optimizing smart contracts for speed, but working through them was a rewarding experience. Big shout-out to the team for the collaboration and perseverance. We learned a lot, and we’re excited about the future of MonadRealm!**
