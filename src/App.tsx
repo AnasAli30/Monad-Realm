@@ -101,7 +101,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const newSocket = io('http://95.169.205.198:3131');
+    const newSocket = io('https://monadrealm.fun');
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
