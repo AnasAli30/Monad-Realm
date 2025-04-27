@@ -22,8 +22,8 @@ MonadRealm solves the problem of fair and rewarding blockchain gaming by providi
 `imposters.io`
 
 ### Team Members:  
-- Anas Ali (GitHub / LinkedIn / Monad dev)  
-- Sameer singh bandhari (Githu)  
+- Anas Ali ([GitHub](https://github.com/AnasAli30) / [LinkedIn](https://www.linkedin.com/in/anas--ali/) / Monad dev)  
+- Sameer singh bandhari ([GitHub](https://github.com/xtrimDev) / [LinkedIn](https://www.linkedin.com/in/xtrimdev) / Game dev)  
 
 
 ### Your Approach:  
@@ -32,14 +32,11 @@ We wanted to create a blockchain gaming platform that allows players to earn rea
 
 - Key challenges you addressed  
 Multiplayer synchronization: Ensuring smooth real-time gameplay, solved with Socket.io.
-
 Efficient smart contracts: Optimizing contracts for low gas fees and fast transactions.
-
 NFT pass system: Ensuring secure and accessible NFT-based access for players.
 
 - breakthroughs during hacking  
 Added a single-player mode (Snake & Jetpack Jerry) to allow solo players to earn MON tokens.
-
 Introduced NFT collectibles as rewards, boosting player engagement.
 
 ---
