@@ -766,7 +766,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
       const encodedFuseKey = encodeFuseKey(ethereumAddress);
 
-      const signatureResponse = await fetch('http://localhost:3001/api/generate-signature', {
+      const signatureResponse = await fetch('http://95.169.205.198:3131/api/generate-signature', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -78,7 +78,7 @@ const NFTMint: React.FC<NFTMintProps> = ({ ethereumAddress, isBlockchainConnecte
       const encodedFuseKey = encodeFuseKey(ethereumAddress);
 
       // First, get the signature from the server
-      const signatureResponse = await fetch('http://localhost:3001/api/generate-signature', {
+      const signatureResponse = await fetch('http://95.169.205.198:3131/api/generate-signature', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

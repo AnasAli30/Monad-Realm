@@ -497,7 +497,7 @@ const SinglePlayerGame: React.FC<{
   const toastIdsRef = useRef<Map<string, string | number>>(new Map());
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io('http://95.169.205.198:3131');
     setSocket(newSocket);
 
     newSocket.on('singlePlayerState', (state: GameState) => {
