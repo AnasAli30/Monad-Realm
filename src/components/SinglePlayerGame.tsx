@@ -497,7 +497,10 @@ const SinglePlayerGame: React.FC<{
   const toastIdsRef = useRef<Map<string, string | number>>(new Map());
 
   useEffect(() => {
-    const newSocket = io('http://95.169.205.198:3131');
+    const newSocket = io("https://backend.monadrealm.fun", {
+      transports: ['websocket'],  // Force WebSocket connection
+      withCredentials: true
+    });
     setSocket(newSocket);
 
     newSocket.on('singlePlayerState', (state: GameState) => {

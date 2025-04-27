@@ -228,7 +228,7 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
       const encodedFuseKey = encodeFuseKey(ethereumAddress);
 
       // Get the signature from the server
-      const signatureResponse = await fetch('http://95.169.205.198:3131/api/generate-signature', {
+      const signatureResponse = await fetch('https://backend.monadrealm.fun/api/generate-signature', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
