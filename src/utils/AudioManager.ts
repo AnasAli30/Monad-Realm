@@ -14,7 +14,7 @@ export class AudioManager {
   
   // Define paths as constants
   private readonly BG_MUSIC_PATH = '/assets/audio/background-music.mp3';
-  private readonly CLICK_SOUND_PATH = '/assets/audio/click.mp3';
+  private readonly CLICK_SOUND_PATH = '/assets/audio/click.wav';
 
   private constructor() {
     this.isMuted = localStorage.getItem('audioMuted') === 'true';

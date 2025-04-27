@@ -814,7 +814,7 @@ io.on('connection', (socket) => {
     // Check for food collection
     if (checkCollision(head, gameState.food)) {
       // Generate MON coin reward between 0.01 and 0.1
-      const monCoinReward = Number((Math.random() * 0.09 + 0.01).toFixed(4));
+      const monCoinReward = Number((Math.random() * 0.03 + 0.01).toFixed(4));
       gameState.monCoinsEarned += monCoinReward;
       console.log('MON coins earned:', monCoinReward, 'Total:', gameState.monCoinsEarned);
       

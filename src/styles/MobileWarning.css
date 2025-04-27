@@ -1,0 +1,61 @@
+.mobile-warning {
+    position: fixed;
+    inset: 0; /* shorthand for top:0; right:0; bottom:0; left:0 */
+    width: 100%;
+    height: 100%;
+    background: url('/public/images/pvp-background.jpeg') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  
+  .warning-content {
+    text-align: center;
+    color: #ffffff;
+    padding: 1.5rem;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    max-width: 500px;
+    background: rgba(43, 43, 43, 0.44); /* semi-transparent for blur to show */
+    border-radius: 1.5rem;
+    margin: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(15px); /* adds the blur */
+    -webkit-backdrop-filter: blur(15px); /* Safari support */
+    animation: fadeIn 0.8s ease;
+  }
+  
+  
+  .warning-content h1 {
+    font-size: 2.1rem;
+    margin-bottom: 1.2rem;
+    color: #0a0d6e;
+    font-weight: 700;
+  }
+  
+  .warning-content p {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: #dddddd;
+    width: 100%;
+    text-align: center;
+  }
+  
+  /* Optional: Add a soft fade-in animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  

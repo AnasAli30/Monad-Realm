@@ -1,59 +1,47 @@
-# PVP Snake Game with 2D-3D Mixture UI
+# MonadRealm - Blockchain Gaming Platform
 
-This is a multiplayer snake game with an enhanced 2D-3D mixture UI that provides an immersive gaming experience while maintaining the classic snake game mechanics.
+MonadRealm is a blockchain-powered gaming platform on the Monad testnet where players can compete in various games and earn MON tokens. Currently featuring Snake PvP as its flagship game, with plans to expand to more classic games.
 
-## Features
+## Project Structure
 
-### 3D View Controls
-- Toggle between 2D and 3D views with a simple button click
-- Manual rotation through mouse drag interaction
-- Auto-rotation option for hands-free 3D viewing
-- Smooth transitions between different view modes
+```
+monad-realm/
+├── client/           # Frontend React application
+├── server/           # Node.js backend server
+├── contracts/        # Smart contracts for blockchain integration
+│   ├── MonadRealm.sol    # Main platform contract
+│   └── SnakeGame.sol     # Snake game implementation
+├── src/             # Main source code
+├── public/          # Static assets
+└── package.json     # Project dependencies
+```
 
-### Enhanced 3D Depth Effects
-- Proper perspective and 3D transformations
-- Dynamic shadows and lighting effects
-- Depth-based layering for game elements (snake, food, grid)
-- Direction-based rotation for snake segments
+## Platform Features
 
-### Particle and Visual Effects
-- 3D particle effects when scoring points
-- Enhanced confetti with 3D transformations
-- Smooth transitions for game state changes
-- Dynamic lighting based on movement
+### Gaming Platform
+- Multi-game support (currently featuring Snake PvP)
+- Real-time multiplayer gameplay
+- Tournament and competitive modes
+- Player ranking and statistics
 
-### Responsive Design
-- Adaptive 3D effects based on screen size
-- Properly scaled for different devices
-- Optimized performance for various hardware
+### Current Game: Snake PvP
+- Multiplayer snake gameplay with real-time synchronization
+- 2D-3D hybrid view with smooth transitions
+- Dynamic 3D effects and particle systems
+- Responsive design for various screen sizes
 
-## Future Enhancement Opportunities
-1. Touch controls for mobile 3D rotation
-2. Varying depths for different food types
-3. Power-up effects with 3D animations
-4. Optional performance mode for lower-end devices
+### Blockchain Integration
+- Smart contract-based room creation and betting
+- MON token rewards for winners
+- MetaMask wallet integration
+- Monad testnet deployment
 
-## Implementation Details
-The 2D-3D mixture UI is implemented using CSS 3D transforms and React state management, with no changes to the server-side game logic. The implementation leverages CSS variables for easy customization and styled-components for component-based styling.
-
-The UI allows players to seamlessly switch between traditional 2D gameplay and an enhanced 3D perspective, providing visual depth while maintaining the same game mechanics and controls.
-
-# MonadRealm
-
-A blockchain-powered gaming platform on the Monad testnet where players can compete in various games and earn MON tokens.
-
-## About MonadRealm
-
-MonadRealm is a comprehensive gaming platform that combines blockchain technology with classic games. Currently featuring Snake PvP, with plans to add more games like Ludo and other classic games. Players can compete against each other, place bets using MON tokens, and win rewards.
-
-## Features
-
-- **Multi-Game Platform**: Currently featuring Snake PvP, with more games coming soon
-- **Blockchain Integration**: Built on the Monad testnet
-- **Token Rewards**: Earn MON tokens by winning games
-- **Real-time Gameplay**: Using Socket.io for seamless multiplayer experience
-- **Betting System**: Place bets using MON tokens
-- **Wallet Integration**: Connect with MetaMask
+### Technical Features
+- React with TypeScript for frontend
+- Three.js for 3D rendering
+- Socket.io for real-time multiplayer
+- Ethers.js for blockchain interaction
+- Styled-components for UI styling
 
 ## Prerequisites
 
@@ -63,78 +51,85 @@ MonadRealm is a comprehensive gaming platform that combines blockchain technolog
 
 ## Installation
 
-1. Clone the repository
-2. Install dependencies:
+1. Clone the repository:
+   ```bash
+   git clone [repository-url]
+   cd monad-realm
    ```
+
+2. Install dependencies:
+   ```bash
    npm install
    ```
-3. Start the server:
+
+3. Start the development server:
+   ```bash
+   npm run dev
    ```
+
+4. In a separate terminal, start the backend server:
+   ```bash
    cd server
    npm install
    npm run dev
    ```
-4. Start the client:
-   ```
-   npm run dev
-   ```
 
-## Blockchain Integration
+## Blockchain Setup
 
-### Smart Contract
+### Smart Contracts
+The platform uses two main smart contracts:
+- `MonadRealm.sol`: Main platform contract for room management, betting, and game coordination
+- `SnakeGame.sol`: Game-specific contract for snake gameplay logic and rewards
 
-The platform uses smart contracts deployed on the Monad testnet to handle:
-- Room creation with betting
-- Player joining with betting
-- Game ending and prize distribution
-- Player balance management
-
-### Wallet Connection
-
+### Wallet Configuration
 1. Install MetaMask browser extension
-2. Add the Monad testnet to MetaMask:
+2. Add the Monad testnet:
    - Network Name: Monad Testnet
    - RPC URL: https://testnet-rpc.monad.xyz
    - Chain ID: 0x279F
    - Currency Symbol: MON
    - Block Explorer URL: https://testnet-explorer.monad.xyz
 
-### Getting MON Tokens
-
-To get MON tokens for testing:
+### Getting Test Tokens
 1. Visit the Monad testnet faucet
 2. Connect your wallet
 3. Request test tokens
 
 ## How to Play
 
-1. Connect your wallet using the WalletConnect component
-2. Create a room and set your bet amount in MON tokens
+1. Connect your MetaMask wallet to MonadRealm
+2. Create a game room and set your bet amount in MON tokens
 3. Share the room ID with other players
-4. Players can join the room by entering the room ID and bet amount
-5. Once all players have placed their bets, the game starts
-6. The winner receives the entire pot of MON tokens
-
-## Current Games
-
-### Snake PvP
-- Classic snake gameplay with multiplayer competition
-- Real-time movement and collision detection
-- Collect food to grow your snake and increase your score
-- Last player standing wins the pot
-
-### Coming Soon
-- More classic games with blockchain rewards
+4. Players join the room and place their bets
+5. Game starts automatically when all players are ready
+6. Last player standing wins the pot
 
 ## Development
 
-### Smart Contract Deployment
+### Frontend Development
+The platform frontend is built with:
+- React 19
+- Three.js for 3D graphics
+- React Three Fiber for React integration
+- Styled-components for styling
 
-To deploy the smart contract:
+### Backend Development
+The platform backend uses:
+- Node.js
+- Socket.io for real-time communication
+- Express for API endpoints
+
+### Smart Contract Development
+To deploy platform contracts:
 1. Install Hardhat: `npm install --save-dev hardhat`
 2. Configure Hardhat for Monad testnet
-3. Deploy the contract: `npx hardhat run scripts/deploy.js --network monadTestnet`
-4. Update the contract address in `src/config/blockchain.ts`
+3. Deploy contracts: `npx hardhat run scripts/deploy.js --network monadTestnet`
+
+## Future Plans
+- Integration of additional classic games
+- Tournament system with larger prize pools
+- Player ranking and achievement system
+- Cross-game rewards and achievements
 
 ## License
 

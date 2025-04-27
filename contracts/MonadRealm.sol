@@ -16,6 +16,7 @@ contract MonadRealm is ERC721, Ownable {
     
     // Constants
     uint256 public constant MAX_SUPPLY = 1000;
+    uint256 public constant MINT_PRICE = 1 ether;
     string private _baseTokenURI;
     address private _signerAddress;
 
@@ -25,6 +26,7 @@ contract MonadRealm is ERC721, Ownable {
     // Events
     event BaseURIUpdated(string newBaseURI);
     event SignerAddressUpdated(address newSignerAddress);
+    event NFTPassMinted(address indexed minter, uint256 tokenId);
 
     constructor(
         string memory name,
@@ -52,8 +54,9 @@ contract MonadRealm is ERC721, Ownable {
         return ethSignedMessageHash.recover(signature) == _signerAddress;
     }
 
-    // Updated mint function with one-per-wallet check
-    function mint(bytes memory signature) external hasNotMinted {
+    // Updated mint function with payment requirement
+    function mint(bytes memory signature) external payable hasNotMinted {
+        require(msg.value == MINT_PRICE, "Incorrect payment amount");
         require(verifySignature(msg.sender, signature), "Invalid signature");
         require(_tokenIdCounter.current() < MAX_SUPPLY, "Max supply reached");
         
@@ -61,6 +64,8 @@ contract MonadRealm is ERC721, Ownable {
         _tokenIdCounter.increment();
         _hasMinted[msg.sender] = true;
         _safeMint(msg.sender, tokenId);
+        
+        emit NFTPassMinted(msg.sender, tokenId);
     }
 
     // Function to check if an address has minted
@@ -96,5 +101,13 @@ contract MonadRealm is ERC721, Ownable {
 
     function getSignerAddress() external view returns (address) {
         return _signerAddress;
+    }
+
+    // Function to withdraw collected ether
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No ether to withdraw");
+        (bool success, ) = owner().call{value: balance}("");
+        require(success, "Withdrawal failed");
     }
 } 

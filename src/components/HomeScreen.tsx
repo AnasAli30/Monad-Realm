@@ -66,6 +66,7 @@ const Container = styled.div<{ isGameScreen: boolean }>`
   min-width: 100vw;
   background: url('/images/pvp-background.jpeg') no-repeat center center fixed;
   background-size: cover;
+  background-position:  center;
   color: white;
   padding: 0rem;
   position: relative;
@@ -107,7 +108,7 @@ const NavBar = styled.nav`
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: rgba(0, 0, 0, 0.44);
+  background: rgba(74, 74, 74, 0.22);
   z-index: 1000;
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(97, 218, 251, 0.2);

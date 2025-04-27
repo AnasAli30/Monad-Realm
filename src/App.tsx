@@ -7,6 +7,7 @@ import HomeScreen from './components/HomeScreen';
 import WalletConnect from './components/WalletConnect';
 import GameWallet from './components/GameWallet';
 import SinglePlayerGame from './components/SinglePlayerGame';
+import MobileWarning from './components/MobileWarning';
 import { GlobalStyles } from './styles/GlobalStyles';
 
 
@@ -88,6 +89,7 @@ const AppContainer = styled.div`
 `;
 
 const App: React.FC = () => {
+  const [isMobile, setIsMobile] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     players: [],
@@ -106,6 +108,18 @@ const App: React.FC = () => {
   const [isBlockchainConnected, setIsBlockchainConnected] = useState(false);
   const [connectedAccount, setConnectedAccount] = useState<string>('');
   const [showSinglePlayer, setShowSinglePlayer] = useState(false);
+
+  useEffect(() => {
+    // Check if device is mobile
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(isMobileDevice);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const newSocket = io('http://localhost:3001');
@@ -237,6 +251,15 @@ const App: React.FC = () => {
     setConnectedAccount(account);
     setIsBlockchainConnected(!!account);
   };
+
+  if (isMobile) {
+    return (
+      <>
+        <GlobalStyles />
+        <MobileWarning />
+      </>
+    );
+  }
 
   return (
     <AppContainer>

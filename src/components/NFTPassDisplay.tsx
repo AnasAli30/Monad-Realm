@@ -5,7 +5,7 @@ import CONTRACT_ABI from '../utils/contractAbi.json';
 import { toast } from 'react-hot-toast';
 import { encodeFuseKey } from '../utils/fuseEncoder';
 
-const CONTRACT_ADDRESS = '0x3543ab02430F5411775afd00310565305716b0e5';
+const CONTRACT_ADDRESS = '0xFa23DC935Fe3871a83E422998Fa4d3b997097Ac9';
 
 interface NFTPassDisplayProps {
   ethereumAddress: string;
@@ -28,7 +28,6 @@ const NFTImage = styled.img`
   object-fit: cover;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-//   margin-bottom: 1rem;
 `;
 
 const InfoContainer = styled.div`
@@ -100,15 +99,15 @@ const MintButton = styled.button`
   margin-top: 1rem;
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
   }
 
   &:disabled {
     background: #666;
     cursor: not-allowed;
     transform: none;
-    opacity: 0.7;
+    box-shadow: none;
   }
 `;
 
@@ -116,9 +115,24 @@ const Description = styled.p`
   font-size: 1.1rem;
   line-height: 1.5;
   font-weight: 600;
-  margin: 1rem 0;
+  color: rgb(255, 255, 255);
+  margin-bottom: 1rem;
+  text-align: center;
+`;
 
-  color: rgba(237, 245, 17, 0.82);
+const PriceDisplay = styled.div`
+  color: #61dafb;
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin: 1rem 0;
+  text-align: center;
+`;
+
+const BalanceWarning = styled.div`
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: center;
 `;
 
 const spin = keyframes`
@@ -153,16 +167,18 @@ const LoadingText = styled.p`
 `;
 
 const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTStatusChange }) => {
-  const [totalSupply, setTotalSupply] = useState<number>(0);
-  const [mintedSupply, setMintedSupply] = useState<number>(0);
-  const [isMinting, setIsMinting] = useState(false);
   const [hasNFT, setHasNFT] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
+  const [currentSupply, setCurrentSupply] = useState(0);
+  const [maxSupply, setMaxSupply] = useState(1000);
+  const [userBalance, setUserBalance] = useState<string>('0');
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   useEffect(() => {
     checkNFTStatus();
     fetchSupplyInfo();
+    fetchUserBalance();
   }, [ethereumAddress]);
 
   const checkNFTStatus = async () => {
@@ -170,10 +186,9 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
       setIsCheckingStatus(true);
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-      const balance = await contract.balanceOf(ethereumAddress);
-      const hasNFT = balance.toNumber() > 0;
-      setHasNFT(hasNFT);
-      onNFTStatusChange(hasNFT);
+      const hasMinted = await contract.hasAddressMinted(ethereumAddress);
+      setHasNFT(hasMinted);
+      onNFTStatusChange(hasMinted);
     } catch (error) {
       console.error('Error checking NFT status:', error);
     } finally {
@@ -186,12 +201,8 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
       setIsLoading(true);
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-      const total = await contract.MAX_SUPPLY();
-      const minted = await contract.getCurrentTokenId();
-      console.log(total.toNumber());
-      console.log(minted.toNumber());
-      setTotalSupply(total.toNumber());
-      setMintedSupply(minted.toNumber());
+      const currentTokenId = await contract.getCurrentTokenId();
+      setCurrentSupply(currentTokenId.toNumber());
     } catch (error) {
       console.error('Error fetching supply info:', error);
     } finally {
@@ -199,14 +210,21 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
     }
   };
 
-  const handleMint = async () => {
-    if (!ethereumAddress) {
-      toast.error('Please connect your wallet first');
-      return;
+  const fetchUserBalance = async () => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const balance = await provider.getBalance(ethereumAddress);
+      setUserBalance(ethers.utils.formatEther(balance));
+    } catch (error) {
+      console.error('Error fetching user balance:', error);
     }
+  };
 
+  const handleMint = async () => {
     try {
       setIsMinting(true);
+
+      // Encode the fuse key with the user's address
       const encodedFuseKey = encodeFuseKey(ethereumAddress);
 
       // Get the signature from the server
@@ -230,15 +248,21 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
       // Get the provider and signer
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
+
+      // Get the contract instance
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-      // Mint the NFT
-      const tx = await contract.mint(signatureData.signature);
+      // Call the mint function with 1 MON payment
+      const tx = await contract.mint(signatureData.signature, {
+        value: ethers.utils.parseEther("1") // Send 1 MON
+      });
+      
       await tx.wait();
 
       toast.success('NFT minted successfully!');
       checkNFTStatus();
       fetchSupplyInfo();
+      fetchUserBalance();
     } catch (error: any) {
       console.error('Error minting NFT:', error);
       toast.error(error.message || 'Failed to mint NFT');
@@ -246,6 +270,8 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
       setIsMinting(false);
     }
   };
+
+  const progress = (currentSupply / maxSupply) * 100;
 
   if (isCheckingStatus) {
     return (
@@ -258,11 +284,19 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
 
   return (
     <Container>
-      <NFTImage src="/images/nft-pass.jpeg" alt="Game Pass NFT" />
+      <NFTImage src="/images/nft-pass.jpeg" alt="NFT Pass" />
       <InfoContainer>
+        <h2>MonadRealm NFT Pass</h2>
         <Description>
-          Mint your Monad Realm Game Pass NFT to access the full game experience including PvP mode and rewards.
+          Mint your Monad Realm Game Pass NFT to access the full game experience including PvP mode and 
+          rewards.
         </Description>
+        <PriceDisplay>Price: 1 MON</PriceDisplay>
+        {parseFloat(userBalance) < 1 && (
+          <BalanceWarning>
+            Warning: Your balance is less than 1 MON
+          </BalanceWarning>
+        )}
         {isLoading ? (
           <LoaderContainer>
             <Spinner />
@@ -270,26 +304,25 @@ const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTS
           </LoaderContainer>
         ) : (
           <>
-            <SupplyInfo>
-              <div>
-                <SupplyLabel></SupplyLabel>
-                <SupplyValue>{mintedSupply}/{totalSupply}</SupplyValue>
-              </div>
-            </SupplyInfo>
             <ProgressBarContainer>
-              <ProgressText>
-                {totalSupply > 0 ? (mintedSupply / totalSupply * 100).toFixed(1) : 0}%
-              </ProgressText>
-              <ProgressBarFill 
-                progress={totalSupply > 0 ? (mintedSupply / totalSupply) * 100 : 0} 
-              />
+              <ProgressBarFill progress={progress} />
+              <ProgressText>{currentSupply} / {maxSupply} Minted</ProgressText>
             </ProgressBarContainer>
+            <SupplyInfo>
+              <SupplyLabel>Current Supply:</SupplyLabel>
+              <SupplyValue>{currentSupply}</SupplyValue>
+            </SupplyInfo>
+            <SupplyInfo>
+              <SupplyLabel>Max Supply:</SupplyLabel>
+              <SupplyValue>{maxSupply}</SupplyValue>
+            </SupplyInfo>
+            <MintButton
+              onClick={handleMint}
+              disabled={hasNFT || isMinting || currentSupply >= maxSupply}
+            >
+              {hasNFT ? 'Already Minted' : isMinting ? 'Minting...' : 'Mint NFT Pass'}
+            </MintButton>
           </>
-        )}
-        {!hasNFT && (
-          <MintButton onClick={handleMint} disabled={isMinting || isLoading}>
-            {isMinting ? 'Minting...' : 'Mint Game Pass NFT'}
-          </MintButton>
         )}
       </InfoContainer>
     </Container>

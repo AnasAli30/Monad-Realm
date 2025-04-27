@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-const CONTRACT_ADDRESS = '0x3543ab02430F5411775afd00310565305716b0e5'; // Add your contract address here
+const CONTRACT_ADDRESS = '0xFa23DC935Fe3871a83E422998Fa4d3b997097Ac9'; // Add your contract address here
 
 const MintContainer = styled.div`
   display: flex;
@@ -50,6 +50,13 @@ const MintButton = styled.button`
   }
 `;
 
+const PriceDisplay = styled.div`
+  color: #61dafb;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+`;
+
 interface NFTMintProps {
   ethereumAddress: string;
   isBlockchainConnected: boolean;
@@ -65,7 +72,6 @@ const NFTMint: React.FC<NFTMintProps> = ({ ethereumAddress, isBlockchainConnecte
     }
 
     try {
-     
       setIsMinting(true);
 
       // Encode the fuse key with the user's address
@@ -96,8 +102,10 @@ const NFTMint: React.FC<NFTMintProps> = ({ ethereumAddress, isBlockchainConnecte
       // Get the contract instance
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-      // Call the mint function directly from the user's wallet
-      const tx = await contract.mint(signatureData.signature);
+      // Call the mint function with 1 MON payment
+      const tx = await contract.mint(signatureData.signature, {
+        value: ethers.utils.parseEther("1") // Send 1 MON
+      });
       
       // Wait for the transaction to be mined
       await tx.wait();
@@ -116,6 +124,7 @@ const NFTMint: React.FC<NFTMintProps> = ({ ethereumAddress, isBlockchainConnecte
   return (
     <MintContainer>
       <h3>Mint Your Game NFT</h3>
+      <PriceDisplay>Price: 1 MON</PriceDisplay>
       <MintButton
         onClick={handleMint}
         disabled={!isBlockchainConnected || isMinting}
