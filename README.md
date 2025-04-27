@@ -1,141 +1,138 @@
-# PVP Snake Game with 2D-3D Mixture UI
+![github-submission-banner](https://github.com/user-attachments/assets/a1493b84-e4e2-456e-a791-ce35ee2bcf2f)
 
-This is a multiplayer snake game with an enhanced 2D-3D mixture UI that provides an immersive gaming experience while maintaining the classic snake game mechanics.
+# 🚀 Project Title
 
-## Features
+> A one-line tagline or mission statement for your project.
 
-### 3D View Controls
-- Toggle between 2D and 3D views with a simple button click
-- Manual rotation through mouse drag interaction
-- Auto-rotation option for hands-free 3D viewing
-- Smooth transitions between different view modes
+---
 
-### Enhanced 3D Depth Effects
-- Proper perspective and 3D transformations
-- Dynamic shadows and lighting effects
-- Depth-based layering for game elements (snake, food, grid)
-- Direction-based rotation for snake segments
+## 📌 Problem Statement
 
-### Particle and Visual Effects
-- 3D particle effects when scoring points
-- Enhanced confetti with 3D transformations
-- Smooth transitions for game state changes
-- Dynamic lighting based on movement
+Select the problem statement number and title from the official list given in Participant Manual.
 
-### Responsive Design
-- Adaptive 3D effects based on screen size
-- Properly scaled for different devices
-- Optimized performance for various hardware
+**Example:**  
+**Problem Statement 7 – Transform the Future of Rural Commerce**
 
-## Future Enhancement Opportunities
-1. Touch controls for mobile 3D rotation
-2. Varying depths for different food types
-3. Power-up effects with 3D animations
-4. Optional performance mode for lower-end devices
+---
 
-## Implementation Details
-The 2D-3D mixture UI is implemented using CSS 3D transforms and React state management, with no changes to the server-side game logic. The implementation leverages CSS variables for easy customization and styled-components for component-based styling.
+## 🎯 Objective
 
-The UI allows players to seamlessly switch between traditional 2D gameplay and an enhanced 3D perspective, providing visual depth while maintaining the same game mechanics and controls.
+What problem does your project solve, and who does it serve?  
+Briefly describe the real-world use case and the value it provides.
 
-# MonadRealm
+---
 
-A blockchain-powered gaming platform on the Monad testnet where players can compete in various games and earn MON tokens.
+## 🧠 Team & Approach
 
-## About MonadRealm
+### Team Name:  
+`Your team name here`
 
-MonadRealm is a comprehensive gaming platform that combines blockchain technology with classic games. Currently featuring Snake PvP, with plans to add more games like Ludo and other classic games. Players can compete against each other, place bets using MON tokens, and win rewards.
+### Team Members:  
+- Name 1 (GitHub / LinkedIn / Role)  
+- Name 2  
+- Name 3  
+*(Add links if you want)*
 
-## Features
+### Your Approach:  
+- Why you chose this problem  
+- Key challenges you addressed  
+- Any pivots, brainstorms, or breakthroughs during hacking  
 
-- **Multi-Game Platform**: Currently featuring Snake PvP, with more games coming soon
-- **Blockchain Integration**: Built on the Monad testnet
-- **Token Rewards**: Earn MON tokens by winning games
-- **Real-time Gameplay**: Using Socket.io for seamless multiplayer experience
-- **Betting System**: Place bets using MON tokens
-- **Wallet Integration**: Connect with MetaMask
+---
 
-## Prerequisites
+## 🛠️ Tech Stack
 
-- Node.js (v14 or higher)
-- MetaMask browser extension
-- MON tokens on the Monad testnet
+### Core Technologies Used:
+- Frontend:
+- Backend:
+- Database:
+- APIs:
+- Hosting:
 
-## Installation
+### Sponsor Technologies Used (if any):
+- [ ] **Groq:** _How you used Groq_  
+- [ ] **Monad:** _Your blockchain implementation_  
+- [ ] **Fluvio:** _Real-time data handling_  
+- [ ] **Base:** _AgentKit / OnchainKit / Smart Wallet usage_  
+- [ ] **Screenpipe:** _Screen-based analytics or workflows_  
+- [ ] **Stellar:** _Payments, identity, or token usage_
+*(Mark with ✅ if completed)*
+---
 
-1. Clone the repository
-2. Install dependencies:
-   ```
-   npm install
-   ```
-3. Start the server:
-   ```
-   cd server
-   npm install
-   npm run dev
-   ```
-4. Start the client:
-   ```
-   npm run dev
-   ```
+## ✨ Key Features
 
-## Blockchain Integration
+Highlight the most important features of your project:
 
-### Smart Contract
+- ✅ Feature 1  
+- ✅ Feature 2  
+- ✅ Feature 3  
+- ✅ Feature 4  
 
-The platform uses smart contracts deployed on the Monad testnet to handle:
-- Room creation with betting
-- Player joining with betting
-- Game ending and prize distribution
-- Player balance management
+Add images, GIFs, or screenshots if helpful!
 
-### Wallet Connection
+---
 
-1. Install MetaMask browser extension
-2. Add the Monad testnet to MetaMask:
-   - Network Name: Monad Testnet
-   - RPC URL: https://testnet-rpc.monad.xyz
-   - Chain ID: 0x279F
-   - Currency Symbol: MON
-   - Block Explorer URL: https://testnet-explorer.monad.xyz
+## 📽️ Demo & Deliverables
 
-### Getting MON Tokens
+- **Demo Video Link:** [Paste YouTube or Loom link here]  
+- **Pitch Deck / PPT Link:** [Paste Google Slides / PDF link here]  
 
-To get MON tokens for testing:
-1. Visit the Monad testnet faucet
-2. Connect your wallet
-3. Request test tokens
+---
 
-## How to Play
+## ✅ Tasks & Bonus Checklist
 
-1. Connect your wallet using the WalletConnect component
-2. Create a room and set your bet amount in MON tokens
-3. Share the room ID with other players
-4. Players can join the room by entering the room ID and bet amount
-5. Once all players have placed their bets, the game starts
-6. The winner receives the entire pot of MON tokens
+- [ ] **All members of the team completed the mandatory task - Followed at least 2 of our social channels and filled the form** (Details in Participant Manual)  
+- [ ] **All members of the team completed Bonus Task 1 - Sharing of Badges and filled the form (2 points)**  (Details in Participant Manual)
+- [ ] **All members of the team completed Bonus Task 2 - Signing up for Sprint.dev and filled the form (3 points)**  (Details in Participant Manual)
 
-## Current Games
+*(Mark with ✅ if completed)*
 
-### Snake PvP
-- Classic snake gameplay with multiplayer competition
-- Real-time movement and collision detection
-- Collect food to grow your snake and increase your score
-- Last player standing wins the pot
+---
 
-### Coming Soon
-- More classic games with blockchain rewards
+## 🧪 How to Run the Project
 
-## Development
+### Requirements:
+- Node.js / Python / Docker / etc.
+- API Keys (if any)
+- .env file setup (if needed)
 
-### Smart Contract Deployment
+### Local Setup:
+```bash
+# Clone the repo
+git clone https://github.com/your-team/project-name
 
-To deploy the smart contract:
-1. Install Hardhat: `npm install --save-dev hardhat`
-2. Configure Hardhat for Monad testnet
-3. Deploy the contract: `npx hardhat run scripts/deploy.js --network monadTestnet`
-4. Update the contract address in `src/config/blockchain.ts`
+# Install dependencies
+cd project-name
+npm install
 
-## License
+# Start development server
+npm run dev
+```
 
-MIT 
+Provide any backend/frontend split or environment setup notes here.
+
+---
+
+## 🧬 Future Scope
+
+List improvements, extensions, or follow-up features:
+
+- 📈 More integrations  
+- 🛡️ Security enhancements  
+- 🌐 Localization / broader accessibility  
+
+---
+
+## 📎 Resources / Credits
+
+- APIs or datasets used  
+- Open source libraries or tools referenced  
+- Acknowledgements  
+
+---
+
+## 🏁 Final Words
+
+Share your hackathon journey — challenges, learnings, fun moments, or shout-outs!
+
+---
