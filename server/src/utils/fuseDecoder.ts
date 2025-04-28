@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const FUSE_SECRET_KEY = process.env.FUSE_SECRET_KEY || 'checking'; // This should match the frontend's secret key
+const FUSE_SECRET_KEY = process.env.FUSE_SECRET_KEY || ''; // This should match the frontend's secret key
 
 export function decodeFuseKey(encodedKey: string, userAddress: string): { address: string } | null {
   try {

@@ -14,6 +14,8 @@ import { GlobalStyles } from './styles/GlobalStyles';
 
 
 
+
+
 interface Position {
   x: number;
   y: number;
@@ -301,9 +303,9 @@ const App: React.FC = () => {
           {winners.map((winner) => (
             <div key={winner.id}>
               {winner.id === playerId ? (
-                <p>You won ${winner.prize}! Score: {winner.score}</p>
+                <p>You won {(winner.betAmount * 2)} mon! Score: {winner.score}</p>
               ) : (
-                <p>Player {winner.id} won ${winner.prize} with score {winner.score}</p>
+                <p>Player {winner.id} won {(winner.betAmount * 2)}mon! with score {winner.score}</p>
               )}
             </div>
           ))}

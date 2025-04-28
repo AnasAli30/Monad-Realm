@@ -1,7 +1,6 @@
 import { ethers } from 'ethers';
 
-const FUSE_SECRET_KEY = 'checking'; // This should match the server's secret key
-
+const FUSE_SECRET_KEY = import.meta.env.VITE_FUSE_SECRET_KEY || ''; // This should match the server's secret key
 export const encodeFuseKey = (address: string): string => {
   // Create a unique string by combining address and secret key
   const combinedString = `${address}:${FUSE_SECRET_KEY}`;

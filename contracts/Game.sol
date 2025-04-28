@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 contract Game {
+    address public owner;
+    
     struct Room {
         string roomId;
         uint256 betAmount;
@@ -19,6 +21,15 @@ contract Game {
     event GameEnded(string roomId, address winner, uint256 prize);
     event Withdrawn(address player, uint256 amount);
     event SinglePlayerReward(address player, uint256 amount);
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+    
+    constructor() {
+        owner = msg.sender;
+    }
     
     function createRoom(string memory _roomId, uint256 _betAmount) external payable {
         require(msg.value == _betAmount, "Incorrect bet amount sent");
@@ -52,7 +63,7 @@ contract Game {
         emit PlayerJoined(_roomId, msg.sender, msg.value);
     }
     
-    function endGame(string memory _roomId, address _winner) external {
+    function endGame(string memory _roomId, address _winner) external onlyOwner {
         Room storage room = rooms[_roomId];
         require(room.isActive, "Room does not exist");
         require(room.winner == address(0), "Game already ended");
@@ -104,10 +115,10 @@ contract Game {
     }
     
     // Function to deposit or reward a player
-    function depositToPlayer(address _player, uint256 _amount, bool _isReward) external payable {
+    function depositToPlayer(address _player, uint256 _amount, bool _isReward) external payable onlyOwner {
         require(_player != address(0), "Invalid player address");
         require(_amount > 0, "Amount must be greater than 0");
-            require(msg.value == _amount, "Incorrect amount sent");
+        require(msg.value == _amount, "Incorrect amount sent");
         
         playerBalances[_player] += _amount;
         
@@ -115,7 +126,7 @@ contract Game {
     }
     
     // Function to deposit funds from a private key to multiple players
-    function depositToMultiplePlayers(address[] calldata _players, uint256[] calldata _amounts) external payable {
+    function depositToMultiplePlayers(address[] calldata _players, uint256[] calldata _amounts) external payable onlyOwner {
         require(_players.length == _amounts.length, "Arrays length mismatch");
         require(_players.length > 0, "Empty arrays");
         

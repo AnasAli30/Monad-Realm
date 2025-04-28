@@ -5,7 +5,7 @@ import CONTRACT_ABI from '../utils/contractAbi.json';
 import { toast } from 'react-hot-toast';
 import { encodeFuseKey } from '../utils/fuseEncoder';
 
-const CONTRACT_ADDRESS = '0xFa23DC935Fe3871a83E422998Fa4d3b997097Ac9';
+const CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '';
 
 interface NFTPassDisplayProps {
   ethereumAddress: string;
@@ -121,7 +121,7 @@ const Description = styled.p`
 `;
 
 const PriceDisplay = styled.div`
-  color: #61dafb;
+  color:rgb(48, 239, 0);
   font-size: 1.4rem;
   font-weight: bold;
   margin: 1rem 0;
@@ -160,10 +160,11 @@ const Spinner = styled.div`
 `;
 
 const LoadingText = styled.p`
-  color: #61dafb;
+  color:rgb(255, 255, 255);
   font-size: 1.1rem;
   text-align: center;
   margin-top: 1rem;
+  font-weight: 600;
 `;
 
 const NFTPassDisplay: React.FC<NFTPassDisplayProps> = ({ ethereumAddress, onNFTStatusChange }) => {

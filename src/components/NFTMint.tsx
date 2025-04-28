@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-const CONTRACT_ADDRESS = '0xFa23DC935Fe3871a83E422998Fa4d3b997097Ac9'; // Add your contract address here
+const CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS || ''; 
 
 const MintContainer = styled.div`
   display: flex;

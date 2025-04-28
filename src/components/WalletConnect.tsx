@@ -92,6 +92,10 @@ const ConnectButton = styled.button`
   border-radius: 6px;
   cursor: pointer;
   margin-top: 8px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.85rem;
   font-weight: 500;
   transition: all 0.3s ease;

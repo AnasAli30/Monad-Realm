@@ -484,6 +484,14 @@ function startGame(room: Room) {
   room.startTime = Date.now();
   room.endTime = Date.now() + GAME_DURATION;
 
+  // Start game loop to check for end time
+  const gameLoop = setInterval(() => {
+    if (room.gameStatus === 'inProgress' && Date.now() >= room.endTime!) {
+      endGame(room);
+      clearInterval(gameLoop);
+    }
+  }, 1000);
+
   io.to(room.id).emit('gameStarted', {
     startTime: room.startTime,
     endTime: room.endTime
@@ -498,6 +506,19 @@ function endGame(room: Room) {
   const winners = Array.from(room.players.values())
     .filter(player => player.score > 0)
     .sort((a, b) => b.score - a.score);
+
+  // If there are winners, distribute rewards to the highest scorer
+  if (winners.length > 0 && winners[0].ethereumAddress) {
+    const winner = winners[0];
+    const winnerAddress = winner.ethereumAddress;
+    if (winnerAddress) {
+      endGameOnBlockchain(room.id, winnerAddress, (status) => {
+        console.log(`Game ${room.id} ended with winner ${winnerAddress}. Status: ${status}`);
+      }).catch(error => {
+        console.error('Failed to end game on blockchain:', error);
+      });
+    }
+  }
 
   io.to(room.id).emit('gameEnded', { winners });
 }
