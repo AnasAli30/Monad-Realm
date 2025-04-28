@@ -50,14 +50,13 @@ Introduced NFT collectibles as rewards, boosting player engagement.
 - APIs:MetaMask API (for wallet integration), OpenZeppelin (for smart contract templates)
 - Hosting:Monad Testnet, IPFS (for storing NFT assets) , vercel (Frontend) , vps (backend)
 
-### Sponsor Technologies Used (if any):
-- [ ] **Groq:** _How you used Groq_  
-- [x] **Monad:** _Your blockchain implementation_  
-- [ ] **Fluvio:** _Real-time data handling_  
-- [ ] **Base:** _AgentKit / OnchainKit / Smart Wallet usage_  
-- [ ] **Screenpipe:** _Screen-based analytics or workflows_  
-- [ ] **Stellar:** _Payments, identity, or token usage_
----
+### Sponsor Technologies Used 
+
+- [x] **Monad:** :
+[Game.sol (Verified game logic)](https://testnet.monadexplorer.com/address/0x2e1a7b028C45Ea722f660BE18d6f759e439004eB?tab=Contract)
+
+[MonadRealm.sol (Verified NFT contract)](https://testnet.monadexplorer.com/address/0xCD9122fA45263Eb2BA030e32036Bf75fB06e0BBf?tab=Contract)
+
 
 ## ✨ Key Features
 
@@ -103,7 +102,14 @@ cd server
 npm run dev
 ```
 
-check env.examples
+## 📜 **.env Format**
+
+```bash
+VITE_FUSE_SECRET_KEY="match with server fuse key"
+VITE_CONTRACT_ADDRESS=0x2e1a7b028C45Ea722f660BE18d6f759e439004eB
+VITE_NFT_CONTRACT_ADDRESS=0xCD9122fA45263Eb2BA030e32036Bf75fB06e0BBf
+```
+
 
 ## 🧬 Future Scope
 
